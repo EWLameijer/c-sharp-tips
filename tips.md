@@ -15,9 +15,9 @@ phones.Price = 129.29m;
 phones.Type = "IPhone X2";
 ```
 
-Stel dat je nu pas ziet dat je geen phones moest gebruiken, maar phones[i]. Hoe kan je dat makkelijk regelen?
+Stel dat je nu pas ziet dat je geen 'phones' moest gebruiken, maar 'phones[i]'. Hoe kan je dat makkelijk regelen?
 
-Ga naar het eind van een van die 's' en van phones, druk op alt, en ga met de muis of cursor naar boven of beneden. Als het goed is zie je nu die blinkende vertikale lijntjes (de 'carets') op alle regels. Type dan in '[i]' (vierkant haakje openen, i, vierkant haakje sluiten), en voilà, de code is netjes
+Ga naar het eind van één van die 's' en van phones, druk op alt, en ga met de muis of cursor naar boven of beneden. Als het goed is zie je nu die blinkende vertikale lijntjes (de 'carets') op alle regels. Type dan in '[i]' (vierkant haakje openen, i, vierkant haakje sluiten), en voilà, de code is netjes
 
 ```
 phones[i].Brand = "Apple";
@@ -59,9 +59,9 @@ In C# en de meeste andere moderne programmeertalen maakt het uit of je hoofdlett
 
 Zodat je zelf beter onthoudt of je voor een variabele een hoofdletter had gebruikt of ergens een underscore, en opdat andere programmeurs jouw code makkelijker kunnen begrijpen, heeft Microsoft stijlregels opgesteld (https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/coding-conventions). Dat zijn geen absolute wetten - elk bedrijf bepaalt zijn eigen stijlregels, Google heeft weer andere regels voor C#-code - maar het is handig om in elk geval in je eigen code consistent te zijn.
 
-Microsoft kent drie soorten patronen, in volgorde van belangrijkheid:
+Microsoft kent vier soorten patronen, in volgorde van belangrijkheid:
 
-- simple : voor ingebouwde C#-woorden zoals simpele types (string, int), controlestructuren (do, while, for), 'structuurmakende' termen (namespace, class), en 'modifiers' (public, private, virtual, etc.)
+- lowercase : voor ingebouwde C#-woorden zoals simpele types (string, int), controlestructuren (do, while, for), 'structuurmakende' termen (namespace, class), en 'modifiers' (public, private, virtual, etc.)
 - PascalCase: JeBegintElkWoordMetEenHoofdletter
 - camelCase: jeBegintElkWoordMetEenHoofdletterBehalveHetEerste
 - hungarian_camelCase: bepaalde_identifiersBeginJeMetEenPrefixGevolgdDoorUnderscoreEnDanCamelcase
@@ -80,7 +80,6 @@ namespace Phoneshop.ConsoleApp
     {   
     	// property
     	public int Answer { get; set; }
-    
     
         // public field (zelden gebruikt! Gebruik liever property...)
         public int OtherAnswer;
@@ -106,7 +105,7 @@ public AddFriend(CandidateFriend candidateFriend)
 {
 
     // lokale variabele
-	int nicenessScore = candidateFriend.Niceness()
+    int nicenessScore = candidateFriend.Niceness()
 
 
 }
@@ -121,9 +120,8 @@ class DemoClass
     // normaal veld (private of protected): begin met underscore
     private string _myName = "Bill";
 
-
     // statisch veld: begin met s_ 
-    private int s_totalDemos = 0;
+    private static int s_totalDemos = 0;
     
     // veld dat gedeeld wordt door verschillende draden: t_
     [ThreadStatic]
@@ -133,7 +131,7 @@ class DemoClass
 
 ```
 
-Waarom die "_" ? Wel, het argument is ongeveer hetzelfde als bij parameters: vaak worden private velden gevuld in een constructor, en dan heb je de keuze tussen
+Waarom die '\_'  ? Wel, het argument is ongeveer hetzelfde als bij parameters: vaak worden private velden gevuld in een constructor. Zonder '\_' moet je dan iets doen als
 
 ```
 class SecondDemo
@@ -152,7 +150,7 @@ class SecondDemo
 }
 ```
 
-waar je dus inconsistent bent hoe je het veld 'answer' noemt (this.answer of answer) - en liefst wil je hetzelfde begrip altijd hetzelfde noemen...
+waar je dus inconsistent bent hoe je het veld 'answer' noemt (this.answer of answer) - en liefst wil je hetzelfde begrip altijd hetzelfde noemen. Je kunt het wel DEELS oplossen...
 
 ```
 class ThirdDemo
@@ -174,7 +172,7 @@ class ThirdDemo
 maar dat werkt ook niet perfect omdat "private int this.answer;" niet legaal is in C#!
 
 
-en 
+Een veldnaam beginnen met een underscore vermijdt die rits inconsistenties...
 
 ```
 class FourthDemo
@@ -201,7 +199,7 @@ hungarian_camelCase is dusdanig omstreden dat niet elk team het zal gebruiken (d
 
 Stel dat je veel tekst moet weergeven, bijvoorbeeld de beschrijving van een telefoon "De Apple IPhone X15 is zo modern en luxueus dat u blij zult zijn dat u een tweede hypotheek hebt genomen om hem te betalen, met zijn 10 megapixel camera, ingebouwde DVD-drive, intelligente ingebouwde assistent en 6G internetverbinding..."
 
-In MarkDown (zoals hier) wordt dat allemaal keurig weergegeven. Maar in Visual Studio en in source control (zoals GitHub of Azure Devops) betekent het dat je heen en weer moet scrollen om de hele regel te lezen, of zelfs te zien of hij eindigt met aanhalingstekens of een puntkomma.
+In MarkDown (zoals hier) wordt dat allemaal keurig weergegeven. Maar in Visual Studio en in source control (zoals GitHub of Azure Devops) betekent het dat je horizontaal heen en weer moet scrollen om de hele regel te lezen, of zelfs te zien of hij eindigt met aanhalingstekens of een puntkomma.
 
 Over hoe lang een regel mag zijn wordt uiteraard flink gediscussieerd, maar meestal is de vuistregel dat het op de monitoren van de meeste teamleden moet passen; rond de 100 karakters, soms 120. Als de regel van je scherm afloopt, is het beter hem op te splitsen.
 
@@ -209,7 +207,7 @@ Bij normale C#-code kan je dat simpelweg doen door enter in te drukken en de vol
 
 ```
 // voor een lange regel code
-for (var myCounter; myCounter<number; myCounter++) 
+for (var myCounter; myCounter<number; myCounter++) if (i[myCounter] == 3)
 
 // wordt:
 for (var myCounter; myCounter<number; myCounter++)
@@ -262,7 +260,7 @@ Waarom?
 
 2) omdat door de zeldzaamheid ervan de meeste programmeurs recursie lastig te begrijpen vinden.
 
-3) omdat je bij recursie makkelijk het geheugen van de computer kunt overbelasten, omdat bij elke recursieve aanroep een extra kopie van parameters en returnwaarden op het geheugengebiedje genaamd de 'stack' wordt geplaatst. Dat leidde tot de een crashende computer en een foutmelding 'Stack overflow' 
+3) omdat je bij recursie makkelijk het geheugen van de computer kunt overbelasten, omdat bij elke recursieve aanroep een extra kopie van parameters en returnwaarden op het geheugengebiedje genaamd de 'stack' wordt geplaatst. Dat leidt gemakkelijk tot een crashende computer en een foutmelding 'Stack overflow' 
 
 (probeer maar eens)
 
