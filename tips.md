@@ -49,7 +49,46 @@ Het stomme was, dat toen ik beter keek, er een message op dezelfde regel stond: 
 Kortom: die messages zijn vaak 'gezeur', maar er zal soms net die ene tussenzitten die je een uur debuggen kan besparen. Mijn advies: ruim dus ook de grijze vierkantjes religieus op!
 
 
+## Een variabelennaam veranderen is zoveel werk!
+
+Druk Ctrl-R-R: en de variabele krijgt in alle code (zelfs in andere bestanden) zijn nieuwe naam. Scheelt heel veel type- en verbeterwerk!
+
+
+# C#-howtos
+
+## Hoe geef je een euroteken weer in de console?
+
+Als je een euroteken in de console probeert af te drukken, zie je normaal een vraagteken. Hoe komt dat?
+
+Dat komt omdat de console geen karakters doorkrijgt, maar blokken bits. Zoiets als 10110010. Normaal interpreteert de console elke byte als een ASCII-karakter. Maar er is geen Ascii-karakter voor het euroteken. Dus geeft de console aan dat hij deze 'rare code' niet kent.
+
+De manier om dat op te lossen is de console te vertellen dat hij de bits niet moet interpreteren als ASCII, maar als stukjes UTF-8-code (UTF-8 definieert vele duizenden karakters, ook het euro-teken); met 
+
+```
+Console.OutputEncoding = Encoding.UTF8; 
+```
+
+
+## Ik wil een string laten zien. Kan dat mooier dan a + ", " + b?
+
+Ja, met string interpolation. Gebruik '$' aan het begin van de string, en zet elke term die je wil laten 'interpreteren' (dus niet letterlijk als woord wil gebruiken) tussen accolades (dus de {}).
+
+```
+// oude manier
+Console.WriteLine(a + ", " + b);
+
+// andere oude manier
+Console.WriteLine("{0}, {1}", a, b);
+
+// moderne manier
+Console.WriteLine($"{a}, {b}");
+
+```
+
 # Codestijl-tips
+
+## Taal
+Hoewel tekst die aan de gebruiker getoond wordt in het Nederlands kan zijn (bij grotere projecten heb je speciale internationalization-bestanden) schrijf je programmacode normaal in het Engels. Niet alleen omdat de code dan niet telkens wisselt van taal (if (mijnHuis.kleur == Color.Orange)...) maar ook omdat veel programmeerteams tegenwoordig multinationaal zijn, niet iedereen kan evengoed Nederlands lezen en schrijven. 
 
 ## Hoofdlettergebruik
 
@@ -222,6 +261,8 @@ var description = "This is the absolutely " +
     "of all, since";
 
 ```
+
+Visual Studio voegt automatisch al de " + " toe als je op 'enter' drukt in het midden van een lange string, dus gebruik dat!
 
 ## Pas op voor recursie!
 
