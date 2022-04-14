@@ -85,6 +85,18 @@ Console.WriteLine($"{a}, {b}");
 
 ```
 
+# C#-architectuur
+
+## Wanneer interfaces?
+
+Bij veel C# enterprise-projecten is de structuur tamelijk simpel. Er zijn drie soorten lagen/objecten.
+
+1) de user-interface-laag. Dat is vaak een Console app of een WinForms app of een ASP.NET applicatie. Deze laag wordt meestal niet geunittest, objecten in deze laag hebben normaal _geen_ interface.
+
+2) de service-laag. "all intelligence, barely any knowledge". Service-objecten worden gebruikt door de User-interface-laag om data op te halen en weg te schrijven. Ze slaan (normaal) zelf geen data op, hebben hoogstens een link naar een database. Bij veel C#-projecten zit alle logica van een app (waaraan moet een geldig object voldoen) in de servicelaag. De klassen in de service-laag hebben normaal _wel_ een interface, mede omdat ze dan makkelijk vervangen kunnen worden (van InMemoryPhoneService naar DatabasePhoneService naar WebScrapingPhoneService die allemaal IPhoneService kunnen implementeren).
+
+3) de data-laag. In Enterprise-C# bevat de datalaag doorgaans "domme" objecten. "All knowledge, no intelligence". Meestal alleen simpele properties met { get; set; }. Deze dataklassen hebben geen interface, omdat ze geen gedrag en logica hebben buiten het simpelweg opslaan en ophalen van data. 
+
 # Codestijl-tips
 
 ## Taal
@@ -263,6 +275,176 @@ var description = "This is the absolutely " +
 ```
 
 Visual Studio voegt automatisch al de " + " toe als je op 'enter' drukt in het midden van een lange string, dus gebruik dat!
+
+## Lengte van methoden
+
+Je kunt methodes zo lang maken als je wilt. De IT-consultant en spreker Venkat Subriamam vertelde eens dat hij in een zaal vroeg of mensen ooit hadden moeten werken met methoden van meer dan 100 regels. Een aantal handen gingen op. Meer dan 1000 regels? Een enkele hand. Meer dan 10.000 regels? Diezelfde hand.
+
+Het bleek dat die programmeur had moeten werken met een methode van 20.000 regels. Venkat's verbaasde vraag "Where did you work? In hell?"
+
+Zoals je mogelijk uit bovenstaande kan opmerken, houden programmeurs doorgaans niet van lange methoden. Allereerst omdat dat niet praktisch is; heel veel programmeerwerk in een organisatie is onderhoudswerk, waarbij je een feature moet toevoegen of code moet debuggen.
+
+Zo heb ik zelf weleens gewerkt met methoden van 1000 regels. En ik bedacht me toen hoeveel praktischer het zou zijn als er in plaats van een methode van 1000 regels het zou zijn gedaan met een methode van 10 regels, waarvan elke methode een andere methode van 10 regels zou aanroepen, waarvan elke methode weer een methode met 10 regels zou aanroepen. In plaats van dan (gemiddeld) 500 regels code te moeten lezen voor ik de code vond die ik moest aanpassen, zou ik dan gemiddeld maar 15 (5+5+5) moeten lezen.
+
+Er zijn ook andere argumenten om methoden relatief kort te houden. Vaak is een deel van een methode ook ergens anders nodig. Als de methode is uitgesplitst in korte methoden kun je gewoon die ene methode aanroepen. Maar als het stukje code dat je nodig hebt ergens in een monstermethode van 500 regels zit, hebben drukke programmeurs de neiging 1 van 2 dingen te doen:
+
+- ze copy-pasten de code naar hun eigen methode
+- ze voegen een parameter en een if-statement toe aan de oorspronkelijke methode dat als die oorspronkelijke methode wordt aangeroepen met dat argument, dat dan hun berekening wordt uitgevoerd.
+
+Allebei de oplossingen hebben nadelen. Copy-pasten betekent dat als code veranderd of gedebugd moet worden, alles op 2 (of meer!) plaatsen veranderd moest worden. Zo heb ik ooit zelf een fout in produktie geïntroduceerd omdat ik slechts 7 kopieën van de code had aangepast - maar er bleken er 11 te zijn!
+
+Extra parameters en if-statements zorgen ervoor dat de oorspronkelijke methode _nog_ langer en moeilijker te begrijpen (en debuggen) wordt. Als je pech hebt durft niemand dan nog die methode aan te raken of hem op te splitsen in kleinere methoden.
+
+Maar wat is een goede maat voor hoe lang een methode mag/moet zijn? Niemand weet het echt; sommigen houden een praktische limiet aan van 1 pagina in de code-editor, zodat je de hele code kunt zien zonder op en neer te scrollen.
+
+Persoonlijk vind ik de gidslijn van Visser (in zijn boek Building Maintainable Software - C# edition https://www.softwareimprovementgroup.com/wp-content/uploads/Building_Maintainable_Software_C_Sharp_SIG.compressed.pdf) redelijk handig en effectief. Visser zegt dat een C#-methode die langer is dan 16 regels code (15 regels + 1 regel voor de kop, andere mensen zouden dat 16 regels noemen) beter kan worden opgesplitst. Let wel: regels code: witregels en commentaarregels tellen niet mee. Visser geeft zelf het voorbeeld
+
+```
+public void Start()
+{
+    if (inProgress)
+    {
+        return;
+    }
+    inProgress = true;
+ 
+    // Update observers if player died:
+    if (!IsAnyPlayerAlive())
+    {
+        foreach (LevelObserver o in observers)
+        {
+            o.LevelLost();
+        }
+    }
+    
+    // Update observers if all pellets eaten:
+    if (RemainingPellets() == 0)
+    {
+        foreach (LevelObserver o in observers)
+        {
+            o.LevelWon();
+        }
+    }
+}
+
+```
+
+Bovenstaande code is 22 regels code (2 witregels, 2 commentaarregels). Visser raadt aan om methodes te extraheren, zodat je het volgende krijgt:
+
+```
+public void Start()
+{
+    if (inProgress)
+    {
+        return;
+    }
+    inProgress = true;
+    UpdateObservers();
+}
+
+public void UpdateObservers()
+{
+    UpdateObserversPlayerDied();
+    UpdateObserversPelletsEaten();
+}
+
+private void UpdateObserversPlayerDied()
+{
+    if (!IsAnyPlayerAlive())
+    {
+        foreach (LevelObserver o in observers)
+        {
+            o.LevelLost();
+        }
+    }
+}
+
+private void UpdateObserversPelletsEaten()
+{
+    if (RemainingPellets() == 0)
+    {
+        foreach (LevelObserver o in observers)
+        {
+            o.LevelWon();
+        }
+    }
+}
+
+```
+
+Moet je nou religieus in de gaten houden of een methode niet boven de 16 regels komt? Dat ook niet. Een gidslijn als codelengte is meer als de brandstofwijzer in je auto dan als een wettelijke maximale snelheid; je hoeft er niet naar te streven dat methoden 15 of 16 regels zijn (methoden van 1 of 2 regels zijn soms ook nuttig), maar als een methode meer dan 20 regels of een scherm begint te worden moet een intern stemmetje in jou gaan zeggen "zou je deze methode niet kunnen opsplitsen"? Misschien een onaangename boodschap, maar prettig dat je het dan al hoort dan tijdens de peer review "WTF: maak deze methode korter", of erger, na een half jaar, dat je zelf de code moet wijzigen en de idioot vervloekt die die methode zo lang en ingewikkeld gemaakt heeft...
+
+
+## Complexiteit van methoden
+
+Sommige methoden zijn lang, maar niet erg complex:
+
+```
+public static void Main() 
+{
+	Console.WriteLine("Welkom!");
+	Console.WriteLine();
+	Console.WriteLine("Voordat u dit programma gaat...");
+	// ... hier nog 100 regels tekst
+    Console.Write("Selecteer 'J' of 'N' om aan te ");
+    Console.Write("geven dat u akkoord gaat met de ");
+    Console.WriteLine("voorwaarden.");
+	var answer = Console.ReadKey();
+	if (answer == 'J') RunRest();
+}
+
+```
+
+Andere methode zijn niet erg lang, maar _wel_ complex:
+
+```
+public static string Part(long n)
+{
+    var ans = PartRec((int)n, new int[n + 1][]).OrderBy(x =>   
+        x).ToArray();
+    return $"Range: {ans.Max() - ans.Min()} Average:  
+        {ans.Average():.00} Median: {Median(ans):.00}";
+    
+    IEnumerable<int> PartRec(int arg, int [][] memory) => 
+        memory[arg] ?? (memory[arg] = Enumerable.Range(arg, 1)
+            .Union(Enumerable.Range(1, arg / 2)
+                .SelectMany(i => PartRec(arg - i, memory).Select(x => x * i))
+                .Distinct())
+            .ToArray());
+    
+    double Median(IList<int> list) => list.Count % 2 == 0
+        ? ((double)list[list.Count / 2 - 1] + list[list.Count / 2]) / 2
+        : list[list.Count / 2];
+  }
+
+```
+
+Er zijn veel redenen waarom code complex is; als je niet weet wat het doet (wat moet 'Part' doen?), als de namen onduidelij zijn (PartRec?) als er onbekende constructies in voorkomen (??, of Enumerable.Range), of als er veel dingen gebeuren op een regel.
+
+Meestal schrijf je duidelijkere code dan bovenstaande, maar kan een methode toch nog complex worden. Om die complexiteit uit te drukken gebruiken programmeurs wel eens het begrip "cyclomatic complexity", of het McCabe-nummer.
+
+Deze cyclomatische complexiteit wordt normaal berekend door naar een methode te kijken. Een methode krijgt sowieso 1 punt. Voor elke if, voor elke while en for(each) en case (in een switch-statement), voor elke && en || wordt er 1 punt bij opgeteld.
+
+```
+bool CanEnterForFree(Person person) 
+{
+    if (IsVip(person) || HasSpecialInvitation(person))
+    {
+        return true;
+    }
+    return false;
+}
+
+```
+
+Bovenstaande methode heeft een complexiteit van 3: 1 voor de methode zelf, 1 voor het if-statement, 1 voor de '||'. De methode is niet erg complex.
+
+Hoe complex mag een methode zijn? Volgens Visser (https://www.softwareimprovementgroup.com/wp-content/uploads/Building_Maintainable_Software_C_Sharp_SIG.compressed.pdf) en ook anderen geldt normaal: 1 tot 5 is goed; 5 tot 10: opletten, overweeg te refactoren. 10 of meer: splits de methode op.
+
+Dit heeft overigens ook praktische redenen als je unittests schrijft: bij elk punt extra complexiteit moet je 2x zoveel tests maken (totaal 2^(complexiteit - 1)); bij de CanEnterForFree moet je 2^(3-1) = 4 tests maken (persoon is Vip, persoon heeft uitnodiging, persoon s geen VIP, persoon heeft geen speciale uitnodiging).
+
+Dat zou betekenen dat je voor een methode met een complexiteit van 11 1024 tests zou moeten maken - die methode opsplitsen in 3 methoden met complexiteiten 4, 5 en 5 (complexiteit 11 = 10 toegevoegde complexiteit, over drie methodes wordt dat 1+3, 1+4 en 1+4)zou het aantal tests terugbrengen tot 8 + 16 + 16 = 40, wat veel werk scheelt!
+
 
 ## Code isn't an asset, it's a liability
 
