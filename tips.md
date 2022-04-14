@@ -264,6 +264,65 @@ var description = "This is the absolutely " +
 
 Visual Studio voegt automatisch al de " + " toe als je op 'enter' drukt in het midden van een lange string, dus gebruik dat!
 
+## Code isn't an asset, it's a liability
+
+Sommige mensen denken dat developers worden gehuurd om code te schrijven. En dat is deels waar. Maar waar we meestal eigenlijk voor worden ingehuurd is het oplossen van de problemen van de klant/cliënt. Code schrijven is slechts een hulpmiddel om dat doel te bereiken. Onze taak is dus NIET persé het schrijven van (veel) code.
+
+Over het algemeen is het zelfs aan te raden een probleem op te lossen met zo weinig mogelijk code. Dat omdat code geen asset (kapitaal) is, maar een liability (zwakte/schuld). 
+
+Allereerst: elke regel code moet worden geschreven. Elke regel code moet worden gedebugd (want in elke regel code kan een bug zitten). Vaak moeten regels code ook worden getest, en/of gedocumenteerd. Elke regel code kost tijd om gecompileerd te worden - elke keer weer; tijd bij het runnen, en kost tijd aan degene die de code moet reviewen. Het kost zeker tijd aan jou of je collega's die die regel code moeten doorlezen op zoek naar een gerapporteerde bug, of moet overdenken voor het implementeren van een nieuwe feature.
+
+Immers, waar denk je dat je eerder een bug in vindt: in een programma van tien regels of in een programma van 100,000 regels?
+
+Nu zijn de grootste kosten van code in de praktijk niet zozeer de compileer- of runkosten, maar de leeskosten- hoe snel is code te begrijpen. Nog steeds zijn minder regels beter dan meer regels, bijvoorbeeld
+
+```
+var phone = phones.Find(p => p.Id == chosenId);
+```
+
+is vaak sneller te begrijpen dan 
+
+```
+Phone phone = null;
+for (var i = 0; i < phones.Count; i++)
+{
+   if (phones[i].Id == chosenId)
+   {
+       phone = phones[i];
+       break;
+   }
+}
+``` 
+
+Omdat de leestijd/begripskosten het belangrijkst zijn is het vaak zelfs beter iets _meer_ regels te hebben (doordat je kleinere methoden gebruikt, of witregels tussen secties in een methode) dan dat je het aantal regels probeert te minimaliseren. Mocht je dat niet geloven: hier is Conway's 'game of life' geprogrammeerd in de programmeertaal APL (https://en.wikipedia.org/wiki/APL_(programming_language)).
+
+```
+life ← {⊃1 ⍵ ∨.∧ 3 4 = +/ +⌿ ¯1 0 1 ∘.⊖ ¯1 0 1 ⌽¨ ⊂⍵}
+```
+
+
+Hoe compact dit ook is, ik denk dat de meeste mensen dit niet voor hun beroep zouden willen onderhouden of debuggen.
+
+Overigens: het feit dat de goedkoopste regels code de regels code zijn die je _niet_ hoeft te schrijven is ook een zeer belangrijke reden voor de opkomst van open source software bibliotheken; open source geeft je de lage kosten van bijna nooit andermans code hoeven lezen, terwijl je in noodgevallen nog steeds de bug kan squashen of de feature kan implementeren die je zo hard nodig hebt.
+
+
+## YAGNI - You Ain't Gonna Need It (Yet)
+
+Als je bezig bent met een programma, zie je vaak hoe een bepaalde klasse of methode breder kan worden toegepast. Bijvoorbeeld: je munteenheid is nu euro, maar misschien gaat het bedrijf in de toekomst internationaal uitbreiden en zullen prijzen dan ook in dollars of yen moeten. Is het dan niet beter aan de Phone-klasse (of aan de PhoneService of aan de Phone console-app) ook een extra parameter toe te voegen voor de currency?
+
+En wat als de BTW verandert van 21% naar bijvoorbeeld 22%? Is het niet handig ergens een file te hebben met constanten zoals die van de BTW, of het percentage in een aparte tabel in de database te zetten zodat je altijd de actuele BTW hebt?
+
+Misschien dat bovenstaande voorbeelden vergezocht lijken; maar ik kan je garanderen dat je als programmeur (heb ik zelf ook) vaak het idee krijgt: "maar wat als dit gaat gebeuren?"
+
+Het probleem is dat je als programmeur slechts zelden gelijk hebt over wat de toekomst brengt of een klant wil of nodig heeft. En in de tussentijd loop je het risico dat je voor die extra flexibiliteit extra code nodig hebt; en code is dus geen asset, maar een liability (zie hierboven). Hoe meer code je hebt, hoe logger de applicatie wordt, en hoe minder makkelijk hij te veranderen is.
+
+Een ander probleem zijn de extra nodige 'begripskosten'. Mensen die je code bekijken - je peer reviewers, je collega's die iets moeten veranderen, en mogelijk jijzelf na twee maanden - moeten immers extra tijd besteden omdat ze zich afvragen "waarom wordt dit nou gedaan? Dit is toch helemaal niet nodig?" Wat jou weer tijd kan kosten (via git blame) om het uit te leggen, of een commentaar te schrijven (dat dus ook weer gelezen moet worden). Ook in dit opzicht maken de 'mogelijk in de toekomst nodige features' het leven van jou en je team moeilijker.
+
+Vandaar dat programmeurs het vaak hebben over YAGNI: You Ain't Gonna Need It (Yet). Mocht je daar meer over willen weten - of mogelijk nog wat sappiger voorbeelden willen weten dan ik hierboven heb gegeven, zou ik aanraden te kijken op de site van Martin Fowler (sowieso een handige praktijk-goeroe om te kennen https://martinfowler.com/bliki/Yagni.html) of van Vladimir Khorikov, die, met zijn karakteristieke diepgang, ook aangeeft in welke uitzonderingssituatie YAGNI géén goed idee is (https://enterprisecraftsmanship.com/posts/yagni-revisited/) - in het geval dat je een API voor een bibliotheek aan het verkopen bent aan andere bedrijven - voor je iets publiceert, zorg ervoor dat je goed hebt nagedacht over het mogelijk gebruik, want gebruikers zijn doorgaans niet blij als hun code niet meer werkt omdat je later iets hebt veranderd in de interface.
+
+Hoe dan ook, voor normale softwareontwikkeling is YAGNI nog steeds een van de beste leidprincipes om te volgen.
+
+
 ## Pas op voor recursie!
 
 Recursie is dat een methode zichzelf aanroept, oftewel direct
