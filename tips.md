@@ -1,5 +1,7 @@
 # Visual Studio-tips
 
+<div style="page-break-after: always;"></div>
+
 ## Vertikaal tekst selecteren
 
 Probleem:
@@ -25,6 +27,7 @@ phones[i].Price = 129.29m;
 phones[i].Type = "IPhone X2";
 ``` 
 
+<div style="page-break-after: always;"></div>
 
 ## Let op de grijze (en rode) vierkantjes!
 
@@ -48,13 +51,19 @@ Het stomme was, dat toen ik beter keek, er een message op dezelfde regel stond: 
 
 Kortom: die messages zijn vaak 'gezeur', maar er zal soms net die ene tussenzitten die je een uur debuggen kan besparen. Mijn advies: ruim dus ook de grijze vierkantjes religieus op!
 
+<div style="page-break-after: always;"></div>
+
 
 ## Een variabelennaam veranderen is zoveel werk!
 
 Druk Ctrl-R-R: en de variabele krijgt in alle code (zelfs in andere bestanden) zijn nieuwe naam. Scheelt heel veel type- en verbeterwerk!
 
 
+<div style="page-break-after: always;"></div>
+
 # C#-howtos
+
+<div style="page-break-after: always;"></div>
 
 ## Hoe geef je een euroteken weer in de console?
 
@@ -68,6 +77,7 @@ De manier om dat op te lossen is de console te vertellen dat hij de bits niet mo
 Console.OutputEncoding = Encoding.UTF8; 
 ```
 
+<div style="page-break-after: always;"></div>
 
 ## Ik wil een string laten zien. Kan dat mooier dan a + ", " + b?
 
@@ -85,7 +95,11 @@ Console.WriteLine($"{a}, {b}");
 
 ```
 
+<div style="page-break-after: always;"></div>
+
 # C#-architectuur
+
+<div style="page-break-after: always;"></div>
 
 ## Wanneer interfaces?
 
@@ -95,13 +109,235 @@ Bij veel C# enterprise-projecten is de structuur tamelijk simpel. Er zijn drie s
 
 2) de service-laag. "all intelligence, barely any knowledge". Service-objecten worden gebruikt door de User-interface-laag om data op te halen en weg te schrijven. Ze slaan (normaal) zelf geen data op, hebben hoogstens een link naar een database. Bij veel C#-projecten zit alle logica van een app (waaraan moet een geldig object voldoen) in de servicelaag. De klassen in de service-laag hebben normaal _wel_ een interface, mede omdat ze dan makkelijk vervangen kunnen worden (van InMemoryPhoneService naar DatabasePhoneService naar WebScrapingPhoneService die allemaal IPhoneService kunnen implementeren).
 
-3) de data-laag. In Enterprise-C# bevat de datalaag doorgaans "domme" objecten. "All knowledge, no intelligence". Meestal alleen simpele properties met { get; set; }. Deze dataklassen hebben geen interface, omdat ze geen gedrag en logica hebben buiten het simpelweg opslaan en ophalen van data. 
+3) de data-laag. In Enterprise-C# bevat de datalaag doorgaans "domme" objecten. "All knowledge, no intelligence". Meestal alleen simpele properties met { get; set; }. Deze dataklassen hebben geen interface, omdat ze geen gedrag en logica hebben buiten het simpelweg opslaan en ophalen van data.
+
+<div style="page-break-after: always;"></div>
+
+## Wanneer constructors?
+
+De meeste programmeertalen hebben constructors, speciale methoden die een object initialiseren. Ook C# heeft constructors, die erg op methoden lijken maar te herkennen zijn aan hun naam (ze hebben dezelfde naam als de klasse) en aan hun returntype (dat ze niet hebben, zelfs geen void). Toch worden in C# constructors minder gebruikt dan in andere programmeertalen.
+
+Constructors hebben twee voordelen: allereerst zorgen ze voor een compactere notatie om een object te initialiseren. En minder regels code helpt de leesbaarheid, schrijfbaarheid en onderhoudbaarheid van de code. In plaats van
+
+```
+var p = new Point();
+p.x = 3;
+p.y = 4;
+p.z = 5;
+```
+
+wordt het afgekort tot
+
+```
+var p = new Point(3, 4, 5);
+```
+
+
+Het tweede voordeel is dat constructoren kunnen checken dat een object correct wordt geïnitialiseerd. Dat alle velden/properties een geldige waarde hebben, en dat de combinatie ook geldig is.
+
+```
+var p = new Person("Pietje", "", -3);
+```
+
+zou bijvoorbeeld een exceptie kunnen gooien: "Person needs a last name; person's age can not be negative." Heel handig voor debuggen.
+
+Nu zie je bij C# echter dat constructoren minder gebruikt worden dan in andere talen. Dat heeft te maken met drie factoren:
+1) C# heeft (in tegenstelling tot de meeste talen) "object initializers"
+```
+var p1 = new Point(3,4,5); // constructor
+var p2 = new Point { X = 3, Y = 4, Z = 5}; // object inializer
+
+```
+2) C# heeft (in tegenstelling tot veel andere talen) properties - andere talen gebruiken vaak private fields, en die _moet_ je wel via een constructor vullen.
+3) C# heeft een eigen afweging in de balans tussen schrijfbaarheid en de buggevoeligheid van een programma (Java heeft bijvoorbeeld zelfs 'checked exceptions' om te voorkomen dat een exceptie wordt gemist door de programmeur!)
+
+Deze factoren leiden ertoe dat in C# in het bedrijfsleven constructoren normaal alleen gebruikt worden in services; services hebben vaak 1 of 2 private fields, en die kan je niet vullen met object initializers. Data objecten (zoals Phone) zijn in commerciële C# code meestal 'dom': ze hebben geen of nauwelijks logica, en normaal geen constructors. Als er bepaalde vereisten zijn voor de geldigheid van het object worden die vereisten normaal in de aanroepende service gezet, en niet in de constructor.
+
+Uiteraard is dat niet altijd een goed idee omdat dat kan betekenen dat de validatielogica buiten de klasse zelf staat en minder makkelijk wordt geupdated als de properties veranderen; of dat de validatielogica gedupliceerd wordt tussen services. Of dat, als je properties toevoegt, aanroepende code vergeet die te initialiseren -object initializers tellen de velden niet. 
+
+Desalniettemin, als je in een bedrijf gaat werken, en je ziet geen constructoren in dataklassen, overleg met de rest van je team als je er constructoren in wilt zetten; het is legaal in C#, maar wel onconventioneel in dataklassen, en wegens de 'vreemdheid' ervan (waardoor het moeilijker leesbaar is omdat mensen vragen gaan stellen als "Waarom heeft dit een constructor? Het is toch geen service?") feitelijk alleen te rechtvaardigen als er in de praktijk codeduplicatie of fouten optreden door het ontbreken van een constructor.
+
+Samenvattend: gebruik constructoren voor services die private fields hebben; maar _niet_ voor dataklassen als Phone tenzij je daar zeer goede redenen voor hebt en er (bij een team) met de rest van het team over hebt overlegd. Gebruik anders voor dataklassen gewoon object initializers.
+
+<div style="page-break-after: always;"></div>
+
+## Wanneer (en waarom) properties?
+
+Lang geleden moesten programmeurs werken met simpele variabelen:
+
+```
+personFirstName = "Hans";
+personLastName = "De Vries";
+personDateOfBirth = "12-12-1916";
+
+ShowPerson(personFirstName, personLastName, personDateOfBirth);
+```
+
+Dit had uiteraard nadelen, zo moest je het eerste deel ("person") telkens opnieuw schrijven, als je arrays had moest je 1 losse array hebben voor de firstName, 1 voor de lastName, enzovoorts, en was het te makkelijk per ongeluk de verkeerde voornaam aan de verkeerde achternaam te koppelen; methoden werden wel erg lang omdat je een aparte parameter had voor (in bovenstaand voorbeeld) de firstName, de lastName... je kon makkelijk methoden krijgen met 5 of 10 parameters! Moeilijk te lezen, te schrijven, te onderhouden en te debuggen.
+
+Daarom kwam in de jaren '70 de programmeertaal C met structs (https://en.wikipedia.org/wiki/Struct_(C_programming_language)):
+
+```
+struct person {
+   char firstName[50];
+   char lastName[50];
+   char dateOfBirth[9];
+}
+
+...
+
+struct person p;
+p.firstName = "Hans";
+p.lastName = "De Vries";
+p.dateOfBirth ="12121916";
+
+showPerson(p);
+```
+
+Dat was uiteraard veel handiger, ook voor functieaanroepen. Echter bleken structs ook problemen te hebben: er was geen 'kwaliteitscontrole' op, elk deel van een programma kon de inhoud van de struct aanpassen met willekeurige waarden. Zo maakte ik mee dat er soms een foute waarde zat in een struct, en elk van de 100,000 andere regels in het programma kon die fout veroorzaakt hadden! De 'openheid' van structs zorgde voor veel en moeilijk op te sporen bugs. Daarom besloten latere ontwerpers van programmeertalen, zoals die van Java in de jaren '90, dat velden van structs normaal alleen te wijzigen waren door code in de struct zelf. De velden werden dus 'private'.
+
+C-code als 
+```
+p.dateOfBirth = "Amersfoort";
+```
+
+werd dus onmogelijk, je kreeg een foutmelding als "dateOfBirth is private in Person".
+
+Wel betekende de Java-manier dat je als programmeur meer moest typen:
+
+```
+class Person {
+    String firstName;
+    String lastName;
+    String dateOfBirth;
+    
+    public Person(String newFirstName, String newLastName, String newDateOfBirth) {
+        firstName = newFirstName;
+        lastName = newLastName;
+        dateOfBirth = newDateOfBirth;
+    }
+    
+    String getFirstName() {
+        return firstName;
+    }
+    
+    void setFirstName(String newFirstName) {
+        firstName = newFirstName;
+    }
+    
+    String getLastName() {
+        return lastName;
+    }
+    
+    void setLastName(String newLastName) {
+        lastName = newLastName;
+    }
+    
+    String getDateOfBirth() {
+        return dateOfBirth;
+    }
+    
+    void setDateOfBirth(String newDateOfBirth) {
+        dateOfBirth = newDateOfBirth;
+    }
+}
+```
+
+Dit was niet zozeer veel typewerk (editors als Eclipse vulden automatisch de code in als je de veldnamen gaf), maar wel veel leeswerk! Wat je liever ook niet wilde. De makers van C# wilden graag mensen uit het Java-kamp naar het Microsoft-kamp trekken, en probeerden dus iets compacters te bedenken dan de Java-stijl. Eerst werd dat
+
+```
+class Person 
+{
+    string _firstName;
+    string _lastName;
+    string _dateOfBirth;
+    
+    public string FirstName 
+    { 
+        get 
+        { 
+            return _firstName;
+        }
+        set
+        {
+            firstName = value;
+        }
+    }
+    
+    public string LastName { 
+        get 
+        { 
+            return _lastName;
+        }
+        set
+        {
+            lastName = value;
+        }
+    }
+    
+    public string DateOfBirth 
+    { 
+        get 
+        { 
+            return _dateOfBirth;
+        }
+        set
+        {
+            _dateOfBirth = value;
+        }
+    }
+}
+```
+
+Hieraan is hopelijk nog te zien dat properties geen 'velden' of 'state' zijn, maar vermomde methoden! _Daarom mag je ook properties hebben in interfaces, terwijl velden in interfaces niet mogen_.
+
+Hoe dan ook: zo had je geen constructor meer nodig (je kon zeggen p.FirstName = "Hans"; - door de compiler omgezet in p.FirstName("Hans"), maar nog steeds was het behoorlijk wat leeswerk; en mensen gebruikten altijd het patroon "type _varName; public type { get { return _varName; } set { _varName = value; }}". Daarom introduceerde C#3.0 (in 2007) zogenaamde "auto-properties", waar die zich herhalende code werd geëlimineerd:
+
+```
+class Person 
+{
+    public string FirstName { get; set; } 
+    
+    public string LastName { get; set; } 
+
+    public string DateOfBirth { get; set; } 
+}
+```
+
+Zoals je ziet, veel minder code!
+
+Let wel, als je zou willen controleren of de waarde van een property wel klopt (dat bijvoorbeeld de DateOfBirth niet in de toekomst ligt) dan moet je weer een _dateOfBirth-veld introduceren en de volledige get;/set; syntax. Mogelijk is dat één van de redenen waarom C# programmeurs vaak liever die moeite niet doen en validatielogica vaak in de services zetten in plaats van in de dataklasse. 
+
+En _wanneer_ properties? Normaal gebruik je properties als een veld/data public moet zijn, dus in data-klassen als Phone. Als data private moet zijn (vaak readonly private, gezet in de constructor en absoluut niet iets dat andere objecten moeten zien, laat staan aan moeten zitten) maak je er een veld van, dus private readonly type _myField.
+
+Let wel: heel soms gebruiken mensen private properties en public fields; maar zeker public fields zijn een slecht idee, want _als_ je moet gaan debuggen omdat ergens in de andere 100,000 regels code de waarde van dat veld onterecht wordt veranderd, moet je hele code hercompileren, en als je de pech hebt dat je code ook door andere applicaties gebruikt wordt, worden die mensen boos op je omdat hun code kapot gaat. Als je data public maakt, zet hem dan alsjeblieft in een property, voor het geval dat. Die 13 karakters extra leeswerk en paar karakters extra typewerk (prop TAB TAB is handig) zijn peanuts vergeleken met de problemen die je krijgt met anderen als je een public field later alsnog moet omzetten naar een property.
+
+<div style="page-break-after: always;"></div>
+
+# Gebruiksvriendelijkheid
+
+<div style="page-break-after: always;"></div>
+
+## User-rage: waarom je altijd feedback moet geven
+
+Heb je weleens gehad dat je computer het niet deed? Of een kraan? Dat je eraan draaide, eraan trok, op knoppen drukte, en dat niets gebeurde? Hoe voelde je je toen?
+
+Of als je in een restaurant komt, en je ziet de ober ergens een krantje zitten lezen. Je zwaait naar hem- hij doet niets. Je zwaait nog eens -hij doet niets. Je roept: geen reactie. Hoe voel je je op dat moment?
+
+Als een gebruiker iets doet, moet een computerprogramma feedback geven. Als de gebruiker een goede toets indrukt, moet die te zien zijn (in bijvoorbeeld een tekstverwerkingsprogramma) of moet er iets gebeuren (een menu wordt getoond). Als de gebruiker een verkeerde toets inklikt moet er een foutmelding met uitleg gegeven worden. Als het een tijd kan duren voordat een commando kan worden uitgevoerd, bijvoorbeeld bij het bewerken of downloaden van een grote file, moet je dat aangeven met een bewegend ikoontje (zo'n zandloper of Apple's regenboogbal). Anders worden gebruikers gefrustreerd, en boos, en gebruiken ze je software niet meer. Niet leuk! Zeker in de gevallen dat je dan een andere baan moet gaan zoeken.
+
+Dus wat de gebruiker ook doet, zorg dat hij/zij altijd feedback krijgt!
+
+<div style="page-break-after: always;"></div>
 
 # Codestijl-tips
+
+<div style="page-break-after: always;"></div>
 
 ## Taal
 Hoewel tekst die aan de gebruiker getoond wordt in het Nederlands kan zijn (bij grotere projecten heb je speciale internationalization-bestanden) schrijf je programmacode normaal in het Engels. Niet alleen omdat de code dan niet telkens wisselt van taal (if (mijnHuis.kleur == Color.Orange)...) maar ook omdat veel programmeerteams tegenwoordig multinationaal zijn, niet iedereen kan evengoed Nederlands lezen en schrijven. 
 
+<div style="page-break-after: always;"></div>
 ## Hoofdlettergebruik
 
 In C# en de meeste andere moderne programmeertalen maakt het uit of je hoofdletters of kleine letters gebruikt in een naam.
@@ -245,6 +481,7 @@ class FourthDemo
 
 hungarian_camelCase is dusdanig omstreden dat niet elk team het zal gebruiken (de PascalCase en camelCase worden wel bijna universeel door C#-teams gebruikt), dus maak je eigen keuze. Maar wat je ook kiest: doe het wel consistent in je code!
 
+<div style="page-break-after: always;"></div>
 
 ## Lengte van coderegels
 
@@ -275,6 +512,8 @@ var description = "This is the absolutely " +
 ```
 
 Visual Studio voegt automatisch al de " + " toe als je op 'enter' drukt in het midden van een lange string, dus gebruik dat!
+
+<div style="page-break-after: always;"></div>
 
 ## Lengte van methoden
 
@@ -374,6 +613,9 @@ private void UpdateObserversPelletsEaten()
 
 Moet je nou religieus in de gaten houden of een methode niet boven de 16 regels komt? Dat ook niet. Een gidslijn als codelengte is meer als de brandstofwijzer in je auto dan als een wettelijke maximale snelheid; je hoeft er niet naar te streven dat methoden 15 of 16 regels zijn (methoden van 1 of 2 regels zijn soms ook nuttig), maar als een methode meer dan 20 regels of een scherm begint te worden moet een intern stemmetje in jou gaan zeggen "zou je deze methode niet kunnen opsplitsen"? Misschien een onaangename boodschap, maar prettig dat je het dan al hoort dan tijdens de peer review "WTF: maak deze methode korter", of erger, na een half jaar, dat je zelf de code moet wijzigen en de idioot vervloekt die die methode zo lang en ingewikkeld gemaakt heeft...
 
+(en een methode extraheren is makkelijk met een moderne IDE: in Visual Studio selecteer je gewoon de code waarvan je een aparte methode wilt maken en druk je Ctrl-R-M).
+
+<div style="page-break-after: always;"></div>
 
 ## Complexiteit van methoden
 
@@ -445,6 +687,298 @@ Dit heeft overigens ook praktische redenen als je unittests schrijft: bij elk pu
 
 Dat zou betekenen dat je voor een methode met een complexiteit van 11 1024 tests zou moeten maken - die methode opsplitsen in 3 methoden met complexiteiten 4, 5 en 5 (complexiteit 11 = 10 toegevoegde complexiteit, over drie methodes wordt dat 1+3, 1+4 en 1+4)zou het aantal tests terugbrengen tot 8 + 16 + 16 = 40, wat veel werk scheelt!
 
+<div style="page-break-after: always;"></div>
+
+## Vermijd 'magische constanten'
+
+Als je een constante ziet in je programma, bijvoorbeeld een boodschap die meerdere malen letterlijk terugkomt (zoals "index mag niet kleiner zijn dan 1"), of een getal dat ongelijk is aan 0, 1 of 2, dan is het goed te kijken wat er aan de hand is. 
+
+In sommige gevallen heb je ergens een waarde 'hardcoded' die in feite een reflectie is van een andere variabele ergens. Bijvoorbeeld:
+
+```
+if (outsideAllowedRange) Console.WriteLine("Het getal moet tussen 1 en 5 liggen");
+```
+
+Waarbij een betere code zou zijn:
+
+```
+if (outsideAllowedRange) Console.WriteLine($"Het getal moet tussen 1 en {_phones.Count} liggen.")
+```
+
+Immers, de 'constante' is feitelijk afhankelijk van een andere constante of variabele, en als die ooit verandert heb je een bug.
+
+Het tweede scenario is als je 'externe' kennis gebruikt. Bijvoorbeeld:
+
+```
+if (numElements >= 10)
+{
+...
+}
+```
+
+In dit geval bleek dat de website die door deze code gescraped werd zowel telefoons als simkaarten kon teruggeven; de simkaarten moesten worden uitgefilterd, wat makkelijk was, omdat die minder dan 10 elementen hadden. Betere code zou hier geweest zijn:
+
+```
+int minimumNumberOfPhoneElements = 10;
+
+if (numElements >= minimumNumberOfPhoneElements)
+{
+...
+}
+```
+
+of zelfs
+
+```
+if (IsPhone(rawPhoneData))
+{
+...
+}
+
+...
+
+bool IsPhone(List<string> objectData)
+{
+    // this website also contains SIM cards, which however have only 9 
+    // or 8 elements.
+    int minimumNumberOfPhoneElements = 10;
+    return (objectData.Count > minimumNumberOfPhoneElements);
+}
+```
+
+Hoe dan ook, als je een string ziet die telkens weer terugkomt, of een nummer ongelijk aan 0, 1 of 2, kijk wat er aan de hand is en voer de juiste actie uit om deze 'magische constante' te elimineren!
+
+<div style="page-break-after: always;"></div>
+
+## Parameters verminderen
+
+Meestal is het fijn als methoden weinig parameters hebben. Visser (https://www.softwareimprovementgroup.com/wp-content/uploads/Building_Maintainable_Software_C_Sharp_SIG.compressed.pdf) houdt het op maximaal vier parameters per methode; maar dat lijkt ook wel de bovengrens; ikzelf vind Fowler's advies in Refactoring beter:
+(http://principles-wiki.net/anti-patterns:long_parameter_list)
+
+- _Methods with 0 and 1 arguments are fine_
+- _2 parameters still good_
+- _3 parameters can be considered OK_
+- _4 and more parameters are usually too much_
+
+Meestal is het beter als je minder parameters kan gebruiken. Maar hoe? 
+
+Er zijn verschillende oplossingen:
+
+1) kan je een parameter lokaal maken, dat je hem een waarde geeft in de methode die het daadwerkelijk gebruikt? Is handig als je een waarde slechts op 1 plaats gebruikt, voorkomt ook dat je hoofdfunctie gaat micromanagen en alle details bevat.
+
+2) kan je van de parameter een veld maken?
+
+3) kan je twee of meer parameters samenvoegen in een apart object?
+
+4) kan je de methode in een apart object zetten? (waarbij de parameters velden kunnen worden)
+
+5) herberekenen in plaats van doorgeven (parameter omzetten in methode)
+
+Hieronder voorbeelden van elke methode.
+
+
+1: Parameter lokaal maken
+
+```
+// vóór refactoring
+public static void Main()
+{
+    char currencySign = '€';
+    DisplayMenu(currencySign);
+}
+
+public static void DisplayMenu(char currencySign)
+{
+    var option = AskForOption();
+    DisplayPhone(option, currencySign);
+}
+
+public static void DisplayPhone(int option, char currencySign)
+{
+    var phone = _phones[option];
+    Console.WriteLine($"{phone.Name}: {currencySign}{phone.Price});
+}
+
+
+// na refactoring 
+
+public static void Main()
+{
+    DisplayMenu();
+}
+
+public static void DisplayMenu()
+{
+    var option = AskForOption();
+    DisplayPhone(option);
+}
+
+public static void DisplayPhone(int option)
+{
+    char currencySign = '€';
+    var phone = _phones[option];
+    Console.WriteLine($"{phone.Name}: {currencySign}{phone.Price});
+}
+```
+
+2: Van de parameter een veld maken
+
+```
+// vóór refactoring
+public static void Main()
+{
+    char currencySign = '€';
+    DisplayMenu(currencySign);
+}
+
+public static void DisplayMenu(char currencySign)
+{
+    var option = AskForOption();
+    DisplayPhone(option, currencySign);
+}
+
+public static void DisplayPhone(int option, char currencySign)
+{
+    var phone = _phones[option];
+    Console.WriteLine($"{phone.Name}: {currencySign}{phone.Price});
+}
+
+
+// na refactoring 
+
+private readonly char currencySign = '€';
+
+public static void Main()
+{
+    DisplayMenu();
+}
+
+public static void DisplayMenu()
+{
+    var option = AskForOption();
+    DisplayPhone(option);
+}
+
+public static void DisplayPhone(int option)
+{
+    
+    var phone = _phones[option];
+    Console.WriteLine($"{phone.Name}: {currencySign}{phone.Price});
+}
+```
+
+
+3: Samenvoegen van de parameters in een apart object
+
+```
+// vóór refactoring
+
+void ShowPrice(char currency, decimal price) 
+{
+    Console.WriteLine($"{currency}{price});
+}
+
+// na refactoring
+class Price 
+{
+    public char Currency { get; set; }
+    
+    public decimal Amount { get; set; }
+}
+
+...
+
+void ShowPrice(Price price) 
+{
+    Console.WriteLine($"{price.Currency}{price.Amount});
+}
+```
+
+4: de methode in een apart object zetten
+
+```
+// vóór refactoring
+static List<string> Parse(string input)
+{
+    var lines = new List<string>();
+    var currentLine = new StringBuilder();
+    for (var i = 0; i < input.Length; i++)
+    {
+        ProcessChar(input[i], currentLine, lines);
+    }
+    var trimmedLine = currentLine.ToString().Trim();
+    if (trimmedLine.Length > 0) lines.Add(trimmedLine);
+    return lines;
+}
+
+static void ProcessChar(char ch, StringBuilder currentLine, List<string> lines)
+{
+    if (ch == ';')
+    {
+        var trimmedLine = currentLine.ToString().Trim();
+        if (trimmedLine.Length > 0) lines.Add(trimmedLine);
+        currentLine.Clear();
+    }
+    else
+    {
+        currentLine.Append(ch);
+    }
+}
+
+
+// na refactoring
+
+class CodeParser
+{
+    readonly List<string> lines = new();
+    readonly StringBuilder currentLine = new();
+
+    public List<string> Parse(string input)
+    {
+        for (var i = 0; i < input.Length; i++)
+        {
+            ProcessChar(input[i]);
+        }
+        var trimmedLine = currentLine.ToString().Trim();
+        if (trimmedLine.Length > 0) lines.Add(trimmedLine);
+        return lines;
+    }
+
+    private void ProcessChar(char ch)
+    {
+        if (ch == ';')
+        {
+            var trimmedLine = currentLine.ToString().Trim();
+            if (trimmedLine.Length > 0) lines.Add(trimmedLine);
+            currentLine.Clear();
+        }
+        else
+        {
+            currentLine.Append(ch);
+        }
+    }
+}
+```
+
+5: herberekenen in plaats van doorgeven
+
+```
+// vóór refactoring
+void ShowPrices(decimal priceExclVat, decimal vatPercentage, decimal priceInclVat) 
+{
+	Console.WriteLine($"The price is {priceInclVat},({priceExclVat} including {vatPercentage}% VAT");
+}
+
+
+// na refactoring
+void ShowPrices(decimal priceExclVat, decimal vatPercentage) 
+{
+	var priceInclVat = priceExclVat * (1 + vatPercentage / 100);
+	Console.WriteLine($"The price is {priceInclVat},({priceExclVat} including {vatPercentage}% VAT)");
+}
+```
+
+<div style="page-break-after: always;"></div>
 
 ## Code isn't an asset, it's a liability
 
@@ -487,6 +1021,7 @@ Hoe compact dit ook is, ik denk dat de meeste mensen dit niet voor hun beroep zo
 
 Overigens: het feit dat de goedkoopste regels code de regels code zijn die je _niet_ hoeft te schrijven is ook een zeer belangrijke reden voor de opkomst van open source software bibliotheken; open source geeft je de lage kosten van bijna nooit andermans code hoeven lezen, terwijl je in noodgevallen nog steeds de bug kan squashen of de feature kan implementeren die je zo hard nodig hebt.
 
+<div style="page-break-after: always;"></div>
 
 ## YAGNI - You Ain't Gonna Need It (Yet)
 
@@ -504,6 +1039,7 @@ Vandaar dat programmeurs het vaak hebben over YAGNI: You Ain't Gonna Need It (Ye
 
 Hoe dan ook, voor normale softwareontwikkeling is YAGNI nog steeds een van de beste leidprincipes om te volgen.
 
+<div style="page-break-after: always;"></div>
 
 ## Pas op voor recursie!
 
