@@ -85,10 +85,6 @@ Console.WriteLine($"{a}, {b}");
 
 ```
 
-## Ik heb een heel simpele methode, kan die korter dan {... return a * a; }?
-
-Als de methode slechts 1 statement heeft die 1 waarde teruggeeft kan je een "expression-bodied method" gebruiken.
-
 # C#-architectuur
 
 ## Wanneer interfaces?
