@@ -95,6 +95,37 @@ Console.WriteLine($"{a}, {b}");
 
 ```
 
+## Ik heb een heel simpele methode, kan die korter dan {... return a * a; }?
+
+Als de methode slechts 1 statement heeft die 1 waarde teruggeeft kan je een "expression-bodied method" gebruiken.
+
+```
+public int Square(int n) 
+{
+    return n * n;
+}
+
+// wordt
+public int Square(int n) => n * n;
+```
+
+Dat scheelt toch drie regels code!
+
+Mogelijk komt dat pijltje je bekend voor: het wordt ook gebruikt in LINQ
+```
+var phone = _phones.Find(p => p.Id == soughtId);
+```
+
+en in 'expression-bodied properties' (properties zonder setter, alleen een getter, waarbij de {get { return ...;}} wordt vervangen door iets korters...)
+
+```
+public int HashCode => Year + 100 * Month;
+```
+
+(als je daar '=' zou gebruiken in plaats van '=>' zou het een public field zijn, geen property!)
+
+Waarom overigens die dikke pijl (=>) in plaats van de mogelijk meer voor de hand liggende dunne pijl (->)? Wel, C# gebruikte de dunne pijl al als de 'pointer member access operator' (https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/operators/pointer-related-operators) voor zogeheten 'onveilige' C# code. Weliswaar gebruik je als enterprise C#-programmeur eigenlijk nooit unsafe code, omdat de optie bestaat en er anders mogelijk akelige programmeerfouten zouden ontstaan en/of de compiler trager zou worden door het moeten ontwarren van dubbelzinnige code is dus gekozen voor de 'dikke pijl'. 
+
 <div style="page-break-after: always;"></div>
 
 # C#-architectuur
