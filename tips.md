@@ -61,6 +61,14 @@ Druk Ctrl-R-R: en de variabele krijgt in alle code (zelfs in andere bestanden) z
 
 <div style="page-break-after: always;"></div>
 
+# C# troubleshooting
+
+<div style="page-break-after: always;"></div>
+
+## Ik wil de inhoud van een 
+
+<div style="page-break-after: always;"></div>
+
 # C#-howtos
 
 <div style="page-break-after: always;"></div>
@@ -1130,5 +1138,3 @@ public static void Main()
 Wel, we hebben er in elk geval de naam van de beroemde programmeursvragensite "Stack Overflow" aan te danken...
 
 Hoe dan ook, tenzij je een interessant wiskundig probleem aan het oplossen bent (bijvoorbeeld https://www.codewars.com/kata/55cf3b567fc0e02b0b00000b), probeer een for, do of while loop te gebruiken in plaats van recursie. Je medeprogrammeurs zullen je dankbaar zijn voor de extra leesbaarheid, en de gebruikers zullen dankbaar zijn omdat hun applicatie niet onverwachts crasht. 
-
-# TODO: Git tips

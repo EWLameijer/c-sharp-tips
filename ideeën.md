@@ -1,5 +1,11 @@
 # Ideeën
 
+- 5000 DRY 
+- 700 ritueel service implementeren [+field]
+- 200 Run: F5, CtrlF5, Shift F5, Ctrl Shift F5
+- 150 public en private: methods, fields, properties and constructors [fields gewoonlijk private readonly]. + Jungle (in data klassen, services en front end)
+- 20 KeyChar [toString] 
+- 17.5 foreach, for, LINQ, do, while 
 - witregelgebruik
 - command-query separation
 	+ int.TryParse(): in C# kan int? ParseOrNull niet werken omdat 5+int? legaal is! In Kotlin krijg je onmiddellijk een foutmelding... TryParse of CanExecute/Execute-patroon. Voordeel: C# veel over unit testing.
