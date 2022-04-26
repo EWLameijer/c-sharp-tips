@@ -2,6 +2,20 @@
 
 <div style="page-break-after: always;"></div>
 
+## Het programma runnen - zonder de muis te gebruiken!
+
+Onthoud (en oefen!)
+
+- Run het programma (met debuggen): F5
+
+- Run het programma (zonder debuggen, breakpoints overslaan): Ctrl F5
+
+- Stop het programma: Shift F5 [Shift betekent vaak 'anti-']
+
+- Stop en herstart het programma: Ctrl Shift F5 
+
+<div style="page-break-after: always;"></div>
+
 ## Vertikaal tekst selecteren
 
 Probleem:
@@ -61,14 +75,6 @@ Druk Ctrl-R-R: en de variabele krijgt in alle code (zelfs in andere bestanden) z
 
 <div style="page-break-after: always;"></div>
 
-# C# troubleshooting
-
-<div style="page-break-after: always;"></div>
-
-## Ik wil de inhoud van een 
-
-<div style="page-break-after: always;"></div>
-
 # C#-howtos
 
 <div style="page-break-after: always;"></div>
@@ -102,6 +108,8 @@ Console.WriteLine("{0}, {1}", a, b);
 Console.WriteLine($"{a}, {b}");
 
 ```
+
+<div style="page-break-after: always;"></div>
 
 ## Ik heb een heel simpele methode, kan die korter dan {... return a * a; }?
 
@@ -350,6 +358,233 @@ Let wel, als je zou willen controleren of de waarde van een property wel klopt (
 En _wanneer_ properties? Normaal gebruik je properties als een veld/data public moet zijn, dus in data-klassen als Phone. Als data private moet zijn (vaak readonly private, gezet in de constructor en absoluut niet iets dat andere objecten moeten zien, laat staan aan moeten zitten) maak je er een veld van, dus private readonly type _myField.
 
 Let wel: heel soms gebruiken mensen private properties en public fields; maar zeker public fields zijn een slecht idee, want _als_ je moet gaan debuggen omdat ergens in de andere 100,000 regels code de waarde van dat veld onterecht wordt veranderd, moet je hele code hercompileren, en als je de pech hebt dat je code ook door andere applicaties gebruikt wordt, worden die mensen boos op je omdat hun code kapot gaat. Als je data public maakt, zet hem dan alsjeblieft in een property, voor het geval dat. Die 13 karakters extra leeswerk en paar karakters extra typewerk (prop TAB TAB is handig) zijn peanuts vergeleken met de problemen die je krijgt met anderen als je een public field later alsnog moet omzetten naar een property.
+
+<div style="page-break-after: always;"></div>
+
+## Wanneer moet iets public zijn, en wanneer private?
+
+C# heeft momenteel zeven verschillende "access modifiers": public, private, protected, internal, private protected en protected internal (https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/access-modifiers). "internal" zie je weleens voorbij komen in door Visual Studio gegenereerde code, "protected" in voorbeeldcode over object-georiënteerd programmeren (maar zelden in commerciële C#-code, omdat daar bijna nooit overerving wordt gebruikt). En "private protected" en "protected internal" zijn eerder om andere programmeurs mee te ergeren ("Jij weet vast niet eens wat het verschil is tussen private protected en protected internal!"). Maar "public" en "private" moet je zeker kennen en toepassen.
+
+Wanneer moet iets public zijn?
+1) als het een property is (properties _mogen_ private zijn, maar dat is bijna nooit nuttig)
+2) als het een methode is die 'gepubliceerd' is via een interface; als de IPhoneService zegt dat implementerende klassen een IEnumerable`<`Phone> Get()-methode moeten hebben, dan moet de IEnumerable`<`Phone> Get()-methode in PhoneService public zijn.
+
+Bij conventie is de Main-methode die het aangrijppunt van je programma is doorgaans public (public static void Main(...), maar in theorie zou hij evengoed private kunnen zijn. Hier is "public" gewoon een conventie, mensen zouden raar opkijken als je hem private zou maken - hij werkt dan nog steeds, maar (bijna) niemand programmeert zo!
+
+Wanneer moet iets private zijn?
+Wel, in alle andere gevallen.
+In het bijzonder zijn velden meestal private (en zelfs readonly private). Methoden die niet door een interface vereist worden zijn doorgaans ook private.
+
+Waarom zoveel 'privacy'? Simpelweg omdat als je een methode public maakt, je min of meer aankondigt: tot in lengte van dagen kan je deze methode gebruiken-en zal hij altijd hetzelfde blijven werken! Dat klinkt misschien fijn, maar in de praktijk blijkt vaak dat je software moet veranderen of aanpassen. Als _alles_ public is is de kans enorm groot dat als je iets verandert, de programma's en bibliotheken die jouw code gebruiken niet meer werken of aangepast moeten worden - wat veel woedende managers en mede-programmeurs kan opleveren. Daarom probeer je zo veel mogelijk dingen 'private' te maken, dan kan je code makkelijker aanpassen zonder dat anderen daar problemen door ondervinden.
+
+Een tweede reden is overigens dat dingen private maken ook fouten vermijdt. Neem bijvoorbeeld de volgende klasse:
+
+
+```
+public class MyStack
+{
+    public List<int> _list = new();
+
+    public void Push(int n) => _list.Add(n);
+
+    public int Pop()
+    {
+        if (_list.Count > 0)
+        {
+            var topElement = _list[^1];
+            _list.RemoveAt(_list.Count -1);
+            return topElement;
+        }
+        throw new InvalidOperationException();
+    }
+}
+```
+
+omdat _list public is, kan een programmeur iets doen als 
+
+```
+var stack = new MyStack();
+stack.Push(1);
+stack._list = new();
+var x = stack.Pop();
+```
+
+Dat kan natuurlijk een foutje zijn (soms is het een poging jouw code te kraken!), maar je wilt zulke fouten uiteraard zoveel mogelijk vermijden. 
+
+Een bijkomend voordeel van een scheiding tussen 'public' en 'private' is dat je ervoor kunt zorgen dat als een client of gebruiker een foute invoer kan geven, per ongeluk of expres (google maar eens op 'SQL injection'), dat je dan alleen in de publieke methoden hoeft te controleren of de invoer goed is, als die niet goed is moeten ze een exceptie gooien ofzo; de private methoden, omdat die alleen door de public methoden worden aangeroepen, krijgen dan per definitie gecontroleerde/schone data, en kunnen daardoor eenvoudiger en korter zijn. Vergelijk het met een huis: als elke kamer een deur naar de straat heeft moet je wel heel veel sloten en grendels en sleutels aanschaffen!
+
+Kortom: weet wanneer je public gebruikt - voor properties en interface-implementerende methoden, en voor de static void Main, en private - voor de rest.
+
+<div style="page-break-after: always;"></div>
+
+## Hoe maak ik een lagenstructuur met een 'echte' service?
+
+Als je van een simpele console-app gaat naar een app met lagenstructuur (dat de consoleapp niet meer de data bevat, maar de data opvraagt van een service), moet je aan de volgende dingen denken; beschouw het als een stappenplan.
+
+1) Maak een nieuw  bestand aan met een nieuwe klasse, bv in het Business-project (maak uiteraard eerst een Business-project aan als je het nog niet hebt). Die klasse moet gaan heten "_X_Service", bijvoorbeeld PhoneService".
+
+```
+// in PhoneService.cs
+public class PhoneService 
+{
+}
+```
+
+2) Verplaats de code die de dataobjecten genereert, opslaat of oplevert naar die service.
+
+```
+// vóór
+
+// in Program.cs
+class Program 
+{
+	private List<Phone> _myPhones = new() { new() {Brand="Apple", Type="IPhone XI"};
+	
+	public static void Main()
+	{ 
+	    // ....
+	}
+}
+
+// in PhoneService.cs
+public class PhoneService 
+{
+}
+
+
+// na
+
+// in Program.cs
+class Program 
+{
+	public static void Main()
+	{ 
+	    // ....
+	}
+}
+
+// in PhoneService.cs
+public class PhoneService 
+{
+    private List<Phone> _myPhones = new() { new() {Brand="Apple", Type="IPhone XI"};
+}
+```
+
+3) maak een (private readonly) veld in de consoleapp aan die een object van de service kan bevatten
+
+```
+// vóór
+
+// in Program.cs
+class Program 
+{
+	public static void Main()
+	{ 
+	    // ....
+	}
+}
+
+
+// na
+
+// in Program.cs
+class Program 
+{
+    private readonly PhoneService _phoneService = new PhoneService();
+
+	public static void Main()
+	{ 
+	    // ....
+	}
+}
+```
+
+4) De consoleapp zal nu niet meer compileren (allemaal rode kringeltjes). Op elke plaats waar je eerst bijvoorbeeld de lijst met phones gebruikte, vervang die code door een aanroep naar de service, en maak ook een geschikte methode aan in de service:
+
+```
+// vóór
+
+// in Program.cs
+class Program 
+{
+	private readonly PhoneService _phoneService = new PhoneService();
+	
+	public static void Main()
+	{ 
+	    foreach (var phone in _myPhones)
+	    {
+	    	Console.WriteLine($"{phone.Brand} {phone.Type}");
+	    }
+	}
+}
+
+// in PhoneService.cs
+public class PhoneService 
+{
+	private List<Phone> _myPhones = new() { new() {Brand="Apple", Type="IPhone XI"};
+
+}
+
+
+// na
+
+// in Program.cs
+class Program 
+{
+    private readonly PhoneService _phoneService = new PhoneService();
+
+	public static void Main()
+	{ 
+	    foreach (var phone in _phoneService.Get())
+	    {
+	    	Console.WriteLine($"{phone.Brand} {phone.Type}");
+	    }
+	}
+}
+
+// in PhoneService.cs
+public class PhoneService 
+{
+    private List<Phone> _myPhones = new() { new() {Brand="Apple", Type="IPhone XI"};
+    
+    public IEnumerable<Phone> Get() => _myPhones;
+}
+```
+
+5) Om het helemaal netjes te maken mag je in de consoleapp niet een concreet type als PhoneService gebruiken, maar alleen een interface als IPhoneService. Hoe je helemaal de PhoneService kwijtraakt leer je als je bezig gaat met dependency injection, maar voorlopig moet je dus een IPhoneService interface maken die alle methoden declareert die public moeten zijn in PhoneService, en het veld in de consoleapp het type IPhoneService geven in plaats van het type PhoneService.
+
+Dus:
+
+```
+// 5.1 Maak een interface
+public interface IPhoneService
+{
+	public IEnumerable<Phone> Get()
+}
+
+// 5.2 Laat de Service de interface implementeren
+public class PhoneService : IPhoneService
+{
+    // ....
+
+
+// 5.3 Verander het type van veld in de consoleapp
+public class Program 
+{
+    private readonly IPhoneService _phoneService = new PhoneService();
+
+    // ....
+}
+```
+
+Ja, dit bovenstaande is nogal wat gedoe, en zeker voor kleine projecten is het 'overkill'. Maar dit is wel hoe veel commerciële C#-projecten worden opgezet.
+
+Rationeel gezien is het zetten van code in een service handig als de Program-klasse zo groot wordt (honderden regels) dat je anders het overzicht verliest; en is het maken van een interface handig zodra je verschillende PhoneService-implementaties hebt. 
+
+Voor de meeste commerciële projecten is het extraheren van een Service vroeg of laat sowieso nodig (het komt zelden voor dat een echt project minder dan 500 regels code bevat). 
+
+Of je een interface voor elke service moet maken is discutabel (iemand als Vladimir Khorikov in zijn boek "Unit Testen" gelooft er niet echt in), maar het is in elk geval in de C#-wereld zo standaard dat teamgenoten mogelijk verward worden als je het niet doet - het overtreden van YAGNI wordt in dit geval als minder belangrijk gezien dan het "principle of least surprise" (of voor wat dat team als verrassend geldt). Hoe dan ook, hoewel teams verschillend omgaan met interfaces (vraag je team wat hun conventies of regels zijn!), moet je zeker interfaces kunnen maken, want soms hoort het bij de codestandaarden van een team, en soms zijn ze ook daadwerkelijk nuttig. Vandaar dat we ermee oefenen! 
+
 
 <div style="page-break-after: always;"></div>
 
@@ -1016,6 +1251,127 @@ void ShowPrices(decimal priceExclVat, decimal vatPercentage)
 	Console.WriteLine($"The price is {priceInclVat},({priceExclVat} including {vatPercentage}% VAT)");
 }
 ```
+
+<div style="page-break-after: always;"></div>
+
+## DRY: Don't Repeat Yourself
+
+Een belangrijk principe in softwareontwerp is "DRY" ("Don't Repeat Yourself"). Elk stuk kennis moet maar op één plaats staan. Nu is er veel over DRY te zeggen, zie bijvoorbeeld "The Pragmatic Programmer" (Andrew Hunt, David Thomas). Zowel het originele boek als de "Anniversary Edition" bespreken DRY uitgebreid, inclusief de subtiliteiten zoals de problemen van een klasse als
+
+```
+class Line
+{
+	public Point Start { get; set; }
+	public Point End { get; set; }
+	public double Length { get; set; }
+}
+```
+
+waarbij je problemen krijgt omdat een andere programmeur Start of End kan veranderen, en dan Length niet automatisch meeverandert; Length is een duplicatie van data. Dat kan tot akelige bugs leiden (betere code zou 'public double Length => Start.DistanceTo(End);' gebruiken).
+
+Hunt en Thomas noemen ook andere problemen, zoals een systeem voor een vrachtvervoersbedrijf waarbij een levering een truck, een chauffeur en een route heeft, maar waarbij een truck een type, een nummerbord en een chauffeur heeft. Wat als de chauffeur ziek is? Dan moeten twee dingen veranderen - een signaal dat het datamodel beter kan.
+
+Maar op een basaal niveau heb je meestal met DRY te maken in herhaalde code. Als je ziet dat je telkens dezelfde of ongeveer dezelfde code schrijft, dan kan dat een overtreding van DRY betekenen.
+
+Voorbeeld:
+```
+if (chosenNumber == 1)
+{
+    Console.WriteLine($"{phones[0].Brand} {phones[0].Name}\n");
+    Console.WriteLine($"{phones[0].Description});
+    Console.WriteLine("Press any key to continue...");
+    Console.ReadLine();
+}
+else if (chosenNumber == 2)
+{
+    Console.WriteLine($"{phones[1].Brand} {phones[0].Name}\n");
+    Console.WriteLine($"{phones[1].Description});
+    Console.WriteLine("Press any key to continue...");
+    Console.ReadLine();
+} // vervolgd voor nummers 3, 4 en 5
+```
+
+Nu zeg je misschien: waarom is dit erg? De code is toch duidelijk?
+
+In de praktijk zorgt dergelijke herhaalde code voor verschillende problemen.
+
+Allereerst krijg je veel meer code dan noodzakelijk is, dus meer code waar bugs in zitten, meer code om te lezen, te testen en doorheen te scrollen (en het compileert ook trager!).
+
+Ten tweede zorgt het copy-pasten en "lokaal aanpassen" van code vaak voor kleine typefouten (en dus debugsessies). Zie je de kopieerfout in bovenstaande code?
+
+Ten derde betekent gedupliceerde code dat aanpassen moeilijker gaat. Dat niet alleen als je een extra telefoon toevoegt (waarvoor je dus 7 extra regels code moet toevoegen.) Maar wat als je de prijs wilt weergeven? Dan moet je in bovenstaand geval op 5 verschillende regels de code veranderen.
+
+En het vierde argument is dat gedupliceerde code erg naar is om te onderhouden: mensen kopiëren code, soms naar andere bestanden, en als dan 1 brok code wordt aangepast omdat ergens de logica verandert of een bug wordt opgelost (een waarde wordt bijvoorbeeld in een ander veld opgeslagen) dan wordt die verandering niet in de hele codebase doorgevoerd, en de bug niet overal opgelost. Zoals ik mogelijk een keer heb vermeld heb ik ooit een akelige bug geïntroduceerd in de code van een klant omdat ik slechts 7 kopieën van gedupliceerde code had gevonden en aangepast, en niet alle 11!
+
+Je vraagt je misschien af of er subtiliteiten zijn: hoeveel regels code mag je dupliceren, en hoe vaak mag je het doen voordat het een probleem is? Visser houdt het op vier regels, maar dat vooral omdat zijn programma voor codeduplicatiedetectie teveel vals-positieven geeft als je minder dan vier regels zou vereisen!
+
+Sommige programmeurs zeggen dat als je 2x hetzelfde schrijft, het nog okee is, en dat je bij 3x moet gaan refactoren. Mogelijk is dat nog okee, hoewel ik momenteel de indruk heb dat hoe ervarener een programmeur is, des te eerder ze geneigd zijn bij 2x hetzelfde schrijven al te gaan refactoren (door bittere, bittere ervaring). En zeker mag je nooit bestaande code kopiëren, zelfs al doe je het maar 1x! Want wie weet hoe vaak anderen die code al gekopieërd hebben...
+
+En zelfs een enkele regel moet je al de-dupliceren (in een aparte methode zetten) _als_ je weet dat als je de regel op deze plaats zou moeten veranderen, dezelfde regel op andere plaatsen ook moet veranderen.
+
+Let wel: er is dus alleen echte duplicatie als een verandering op 1 plaats ook tot veranderingen op andere plaatsen zou moeten leiden. Neem bijvoorbeeld het volgende geval:
+
+```
+Console.WriteLine($"{phone.Brand} {phone.Type}");
+
+
+//...
+
+Console.WriteLine($"{priceInclVat} {priceExclVat}");
+```
+
+Zou je hier een methode moeten maken die twee argumenten neemt en die met een spatie tussenruimte uitprint op de console? Nee, want ze hebben (voorzover we weten) niets met elkaar te maken; als het afbeelden van de naam van de telefoon verandert, hoeft de afbeelding van de prijs niet noodzakelijkerwijs ook te veranderen, en andersom. Dit is geen gedupliceerde code, maar onafhankelijke code die alleen sterk op elkaar lijkt.
+
+Hoe dan ook, als je het gevoel hebt dat je bepaalde code al ergens eerder geschreven of gezien hebt, maak een aparte methode die op beide plaatsen kan worden gebruikt. En dat is makkelijk omdat Visual Studio geselecteerde code kan omzetten in een aparte methode met Ctrl R M. Toegepast op de oorspronkelijke code zou dat leiden tot
+
+```
+if (chosenNumber == 1)
+{
+    DisplayPhone(0);
+}
+else if (chosenNumber == 2)
+{
+    DisplayPhone(1);
+} // vervolgd voor nummers 3, 4 en 5
+
+
+// ...
+
+void DisplayPhone(int index)
+{
+    Console.WriteLine($"{phones[index].Brand} {phones[index].Name}\n");
+    Console.WriteLine($"{phones[index].Description});
+    Console.WriteLine("Press any key to continue...");
+    Console.ReadLine();
+}
+```
+
+Nu zie je als het goed is nog steeds een partroon (if chosenNumber == n) { DisplayPhone(n-1); }, wat kan leiden tot 
+
+```
+if (chosenNumber >= 1 && chosenNumber <= phones.Count)
+{
+    DisplayPhone(chosenNumber - 1);
+}
+
+// ...
+
+void DisplayPhone(int index)
+{
+    Console.WriteLine($"{phones[index].Brand} {phones[index].Name}\n");
+    Console.WriteLine($"{phones[index].Description});
+    Console.WriteLine("Press any key to continue...");
+    Console.ReadLine();
+}
+```
+
+Kortom: minder code, en makkelijk onderhoudbare code. Dus als je bij het schrijven of lezen van code het gevoel krijgt van 'heb ik dit al niet eens eerder geschreven of gezien?', kijk of DRY van toepassing is en probeer de code uit te factoren naar een aparte methode!
+
+
+### Meer lezen?
+- The Pragmatic Programmer, Andrew Hunt & David Thomas
+- https://martinfowler.com/bliki/BeckDesignRules.htm
+- https://en.wikipedia.org/wiki/Don%27t_repeat_yourself
 
 <div style="page-break-after: always;"></div>
 

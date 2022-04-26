@@ -1,9 +1,13 @@
 # Ideeën
 
-- 5000 DRY 
-- 700 ritueel service implementeren [+field]
-- 200 Run: F5, CtrlF5, Shift F5, Ctrl Shift F5
-- 150 public en private: methods, fields, properties and constructors [fields gewoonlijk private readonly]. + Jungle (in data klassen, services en front end)
+
+
+
+- 
+- 100 git rm --cached
+- 67.5 stage, commit, push (beetje als Add Migration; Update Database)
+- 70 TryParse
+- 27.5 List vs IEnumerable
 - 20 KeyChar [toString] 
 - 17.5 foreach, for, LINQ, do, while 
 - witregelgebruik
@@ -23,3 +27,9 @@
 - verwijderen dode code
 - verwijderen uitgecommentarieerde code 
 - ...
+
+DONE  
+- DRY
+- 150 public en private: methods, fields, properties and constructors [fields gewoonlijk private readonly]. + Jungle (in data klassen, services en front end)
+- - 700 ritueel service implementeren [+field]
+- - 200 Run: F5, CtrlF5, Shift F5, Ctrl Shift F5
