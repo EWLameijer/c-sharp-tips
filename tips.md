@@ -2,6 +2,16 @@
 
 <div style="page-break-after: always;"></div>
 
+## Ik vergeet weleens spaties op de juiste plekken te zetten of op Ctrl-KD te drukken!
+
+Automatisch code opschonen bij saven:
+
+Tools > Options > Text Editor > Code Cleanup.
+Kruis de "Run Code Cleanup profile on Save." aan.
+
+<div style="page-break-after: always;"></div>
+
+
 ## Het programma runnen - zonder de muis te gebruiken!
 
 Onthoud (en oefen!)
@@ -584,6 +594,46 @@ Rationeel gezien is het zetten van code in een service handig als de Program-kla
 Voor de meeste commerciële projecten is het extraheren van een Service vroeg of laat sowieso nodig (het komt zelden voor dat een echt project minder dan 500 regels code bevat). 
 
 Of je een interface voor elke service moet maken is discutabel (iemand als Vladimir Khorikov in zijn boek "Unit Testen" gelooft er niet echt in), maar het is in elk geval in de C#-wereld zo standaard dat teamgenoten mogelijk verward worden als je het niet doet - het overtreden van YAGNI wordt in dit geval als minder belangrijk gezien dan het "principle of least surprise" (of voor wat dat team als verrassend geldt). Hoe dan ook, hoewel teams verschillend omgaan met interfaces (vraag je team wat hun conventies of regels zijn!), moet je zeker interfaces kunnen maken, want soms hoort het bij de codestandaarden van een team, en soms zijn ze ook daadwerkelijk nuttig. Vandaar dat we ermee oefenen! 
+
+
+<div style="page-break-after: always;"></div>
+
+
+## Hoe ga ik om met mogelijke foute input voor methoden?
+
+Methodes krijgen normaal een aantal parameters. Vaak is zo'n parameter een standaard-type als een int of een string. 
+
+In de praktijk kunnen methoden zelden goed omgaan met alle 'legale' inputs. Bijvoorbeeld: wat als je een methode maakt die de eerste letter van een woord neemt, maar je geeft een lege string, of zelfs een null? Of een methode die het aantal kinderen van iemand opslaat, en die wordt aangeroepen met -1?
+
+"" en null zijn legale strings, en -1 is een legale integer, dus de compiler zal niet klagen. Maar als het programma wordt uitgevoerd zal het crashen of - wat vaak nog erger is- foute data opslaan.
+
+Hoe ga je met dat probleem om als programmeur?
+
+De oplossing hangt af van verschillende factoren:
+
+- hoe belangrijk is het dat het programma altijd correcte resultaten geeft versus hoe belangrijk is het dat het programma altijd blijft werken? Als een programma de dosis van een geneesmiddel moet berekenen is het beter dat het crasht met een foutmelding als iets onverwachts gebeurt dan dat het een dodelijke dosis voorschrijft; voor een webbrowser is het beter om de pagina in een verkeerde kleur of met een verkeerd lettertype af te beelden dan om te crashen.
+
+- wat is de oorzaak van het probleem? Er zijn basaal vier verschillende oorzaken van problemen met foute invoer.
+
+1) de programmeur is 'lui' - "er moet ook iets gedaan worden als deze waarde wordt gegeven/als dit optreedt, maar ik heb nu geen tijd dat te implementeren" (de invoer is in theorie geldig, maar wordt niet goed afgehandeld)
+
+2) de programmeur heeft ergens een bug in zijn of haar programma (roept bijvoorbeeld een stringfunctie aan op een null-string).
+
+3) een gebruiker geeft een rare invoer (bijvoorbeeld "a" in plaats van een getal) 
+
+4) een hacker probeert het programma te kraken
+
+
+### De programmeur is lui/heeft te weinig tijd
+In het eerste geval (de programmeur is lui of heeft weinig tijd), moet je beslissen wat belangrijker is: correctheid of robuustheid. Als correctheid belangrijker is moet je dan een NotImplementedException gooien, als die ooit door je baas wordt genoemd zal zij/hij je wel tijd willen geven om het goed op te lossen. Als robuustheid (het programma moet blijven runnen) belangrijker is, dan moet je gokken wat een redelijke waarde is; als je een geweten hebt zorg je er wel voor dat de gebruiker een boodschap te zien krijgt dat het resultaat mogelijk incorrect is.
+
+### Er is een bug in de code
+Als de methode _nooit_ zou moeten worden aangeroepen met een bepaalde waarde voor het argument (name mag bijvoorbeeld nooit null zijn) dan heb je meerdere keuzes.
+
+Als de foute input zorgt voor een exceptie (NullReferenceException, bijvoorbeeld) èn robuustheid minder belangrijk is kun je ervoor kiezen de code zo te houden; mocht er ooit een foute invoer zijn, dan zie je dat gelijk en kan je de bug eruit halen. En de code blijft zo simpel als mogelijk is.
+
+Als de foute input niet zorgt voor een exceptie maar voor ander raar gedrag (bijvoorbeeld foute uitvoer), dan is het meestal beter om zelf een exceptie te gooien. 
+
 
 
 <div style="page-break-after: always;"></div>
