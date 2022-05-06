@@ -895,10 +895,10 @@ Deze situatie kan je afhandelen door in de 'ingangen' van je programma (de actio
 
 excepties gebruik ('throw') je normaal voor
 - legitieme invoer die (nog) niet correct wordt verwerkt door een methode
-- foute invoer die je verwacht en die je niet kunt of wilt afhandelen met een nullable of result-object - hoewel je dat vaak beter kunt oplossen door een ander datatype te gebruiken of mogelijke foute invoer op te vangen in de code die de procedure aanroept, bij de bron van de foute data, of het nou een gebruiker, een file of een website is.
+- foute invoer die je verwacht en die je niet kunt of wilt afhandelen met een nullable of result-object - hoewel je dat vaak beter kunt oplossen door een ander datatype te gebruiken of mogelijke foute invoer op te vangen in de code die de methode aanroept, of bij de bron van de foute data, of het nou een gebruiker, een file of een website is.
 - als de invoer een aanval/hack lijkt te zijn
 
-In andere gevallen kun je beter proberen te werken met if-else logica of non-nullable of niet-primitieve typen, en de excepties die C# 'spontaan' gooit mogelijk nog te niet op te vangen als je nog in de development-fase bent (dan is het handig dat je bugs snel ontdekt), maar in productiecode wel ergens aan de frontend af te vangen. Al zal je dat laatste in ASP.NET ook kunnen doen door middleware en filters goed te configureren; try-cathes zullen niet altijd nodig zijn. 
+In andere gevallen kun je beter proberen te werken met if-else logica of non-nullable of niet-primitieve typen, en de excepties die C# 'spontaan' gooit mogelijk nog te niet op te vangen als je nog in de development-fase bent (dan is het handig als je bugs snel ontdekt), maar in productiecode wel ergens aan de frontend af te vangen. Al zal je dat laatste in ASP.NET ook kunnen doen door middleware en filters goed te configureren; try-cathes zullen niet altijd nodig zijn. 
 
 <div style="page-break-after: always;"></div>
 
