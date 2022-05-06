@@ -85,6 +85,35 @@ Druk Ctrl-R-R: en de variabele krijgt in alle code (zelfs in andere bestanden) z
 
 <div style="page-break-after: always;"></div>
 
+# Git
+
+<div style="page-break-after: always;"></div>
+
+## Hoe verwijder ik een bestand van git/Azure devops terwijl ik het lokaal wèl wil laten staan?
+
+Soms ontdek je dat je een file remote hebt staan die je niet remote wilt hebben staan, ofwel omdat er geheime data in staan (zoals een connectionstring), ofwel omdat er per ongeluk niet-tekstfiles, zoals dlls of executable files, in je repository staan.
+
+Anno 2022-05-2 lijkt helaas geen gemakkelijke manier zijn om dit op te lossen met Visual Studio (https://stackoverflow.com/questions/29975193/how-to-move-a-tracked-file-to-untracked-using-visual-studio-tools-for-git), maar het probleem is wel op te lossen.
+
+De simpelste manier is via de commandline - al betekent dat mogelijk dat je nog wel apart git moet installeren (https://gitforwindows.org/). 
+
+Hoe dan ook, als Git op je computer geïnstalleerd is kun je een commandprompt openen en naar de directory gaan met de file of directory die je uit git wil hebben. Dan, voor een enkele file (zoals 'my_password.txt'):
+
+```
+git rm --chached my_password.txt
+```
+
+Voor een directory, zoals 'Bin' (let op de -r):
+
+```
+git rm --chached -r Bin
+```
+
+Alternatief kan je ook een tool downloaden dat gespecialiseerd is in Git, dan kun je sowieso makkelijk veel dingen doen die moeilijk of onmogelijk zijn in Visual Studio; mijn huidige favoriet is Git Extensions (http://gitextensions.github.io/), waarmee het stoppen met het tracken van een file ("stop tracking this file") erg makkelijk is. Maar er is heel veel keuze (https://alternative.me/git-extensions), dus experimenteer gerust met een paar mogelijkheden.
+
+
+<div style="page-break-after: always;"></div>
+
 # C#-howtos
 
 <div style="page-break-after: always;"></div>
@@ -153,6 +182,139 @@ public int HashCode => Year + 100 * Month;
 Waarom overigens die dikke pijl (=>) in plaats van de mogelijk meer voor de hand liggende dunne pijl (->)? Wel, C# gebruikte de dunne pijl al als de 'pointer member access operator' (https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/operators/pointer-related-operators) voor zogeheten 'onveilige' C# code. Weliswaar gebruik je als enterprise C#-programmeur eigenlijk nooit unsafe code, omdat de optie bestaat en er anders mogelijk akelige programmeerfouten zouden ontstaan en/of de compiler trager zou worden door het moeten ontwarren van dubbelzinnige code is dus gekozen voor de 'dikke pijl'. 
 
 <div style="page-break-after: always;"></div>
+
+## Hoe check ik of een string die bijvoorbeeld door een gebruiker is ingevoerd een nummer is?
+
+Vaak moet je bij programmeren een string (zoals "142") omzetten in een nummer (dus 142), om het te kunnen gebruiken in berekeningen of bij transacties met databases en dergelijke.
+
+Oorspronkelijk werd dit in C# gedaan met de 'Parse-methoden': int myInt  = int.Parse(myString); double myDouble = double.Parse(myString); ... enzovoort.
+
+Deze methodes waren eenvoudig te gebruiken - behalve als de string toevallig geen nummer representeerde. Dan gooiden ze een exceptie, zoals een ArgumentNullException, een FormatException, of een OverflowException (https://docs.microsoft.com/en-us/dotnet/api/system.int32.parse?view=net-6.0#system-int32-parse(system-string)). Het was nogal veel werk voor een programmeur om dat allemaal netjes af te handelen, en op zijn minst had je een lelijk try-catch-blok nodig.
+
+In moderner C# wordt daarom een andere methode gebruikt: een TryParse-methode. In plaats van 
+
+```
+var userInput = Console.ReadLine();
+try 
+{
+   var chosenNumber = int.Parse(userInput);
+}
+catch
+{
+   ...
+}
+```
+
+gebruik je 
+
+```
+var userInput = Console.ReadLine();
+var isValidNumber = int.TryParse(userInput, out int chosenNumber);
+if (isValidNumber)
+{
+   //... use chosenNumber
+}
+```
+
+Nu is TryParse relatief lastig te begrijpen: het is een methode met niet één, maar _twee_ outputs: de normale output (die dus, in tegenstelling tot bij Parse, niet het gevraagde getal is, maar een bool die aangeeft of de input überhaupt een getal was), en een zogenaamde 'output parameter', wat op een normale parameter lijkt, maar wordt voorafgegaan door het woordje 'out' (en hier ook door het type van de parameter, int).
+
+Als de string geen geldig nummer voorstelt, wordt de normale returnwaarde (de bool) uiteraard false; de output-parameter wordt dan op 0 gezet. Dus zorg dat je altijd de bool returnwaarde checkt, zeker als 0 een legale waarde is voor de rest van het programma.
+
+Voor degenen die zich afvragen of het niet simpeler had gekund: een taal als Go lost dit probleem op met een tuple-returnwaarde
+
+```
+i, err := strconv.Atoi(s)
+if err != nil {
+    // handle error
+    fmt.Println(err)
+    os.Exit(2)
+}
+```
+
+wat in principe ook in C# had gekund (C# heeft ook tuples); het zou er dan hebben uitgezien als.
+
+```
+var (i, err) = int.SafeParse(s);
+if (err != null) {
+    // handle error
+}
+```
+
+Andere talen, zoals Kotlin, gebruiken een nullable int als returntype:
+
+```
+val chosenNumber = userInput.toIntOrNull()
+if (chosenNumber != null) show(phone[chosenNumber]))
+```
+
+Maar hoewel je een dergelijke methode ook in C# zou kunnen maken, kan je in C# bijvoorbeeld gewoon een nullable waarde optellen bij een int; er wordt dus niet altijd gewaarschuwd als je iets met het 'chosenNumber' probeert wat niet zou kunnen met een null-waarde, in tegenstelling tot bij Kotlin, dat de compilatie stopt als het een onveilige operatie ontdekt.
+
+In principe zou je in C# wel een methode kunnen maken die een Result`<`int> teruggeeft, wat wel veilig zou zijn qua compiler en mogelijk iets simpeler (voor degenen die Result begrijpen) dan de TryParse.
+
+Hoe dan ook, C# heeft TryParse, wat mogelijk niet de eenvoudigst te begrijpen methode is, maar (na gewenning) iets mooiere code produceert dan Parse. Het is jammer dat TryParse niet iets simpeler/mooier is, maar elke taal heeft zijn beperkingen (zelfs Kotlin is niet perfect! (https://dev.to/martinhaeusler/kotlin---the-good-the-bad-and-the-ugly-3jfo)). 
+
+In C# zou ik aanraden voor het parsen van integers TryParse te gebruiken, en alleen als dat in de praktijk teveel bugs oplevert overleggen met je team en dan òf teruggaan naar Parse òf een Result-producerende versie maken en gebruiken. Maar als standaard voor C#-programmeren lijkt TryParse anno C#10 nog steeds het beste, zeker als je er eenmaal aan gewend bent!
+
+<div style="page-break-after: always;"></div>
+
+# Debuggen
+
+<div style="page-break-after: always;"></div>
+
+## Als ik een object uitprint krijg ik iets raars te zien op het scherm, zoals "PhoneShop.Domain.Phone" inplaats van "Apple IPhone 11"
+
+Bij het aanroepen van een Console.WriteLine()-methode, of, expliciet, met een mijnVariabele.ToString()-methode, zet de .NET-runtime de variabele om in een string - maar die string is niet altijd wat je verwacht!
+
+Standaardtypes als int, bool, double, char (en inderdaad ook string) worden een string zoals je die verwacht: "-1245", "false", "1.24E-7" en "Q". Maar bij de meeste objecten, en zeker bij objecten van klassen die je zelf hebt gedefinieerd, wordt een speciale methode aangeroepen die al gedefinieerd is op de 'superklasse' van alle klassen, de 'object' klasse.
+
+En die methode zegt: als iemand de ToString() methode aanroept, produceer een string die de type van dit object beschrijft! Daarom zie je dus iets als "PhoneShop.Domain.Phone": je krijgt het 'volledig gekwalificeerde type', dus de naam van de klasse, voorafgegaan door de namen van de namespace(s) waar het in zit!
+
+Maar hoe kan je nou de inhoud van het object bekijken? Dat is immers wat je meestal wilt. In de praktijk heb je drie mogelijkheden:
+
+1) Je print handmatig de velden uit die je nodig hebt:
+```
+// werkt niet:
+Console.WriteLine(phone); // output: "PhoneShop.Domain.Phone"
+
+// werkt wel
+Console.WriteLine($"{phone.Brand} {Phone.Type}"); // output "Apple IPhone 11"
+```
+
+2) Je maakt een aparte methode die het object in een string omzet (of afbeeldt)
+
+```
+// werkt niet:
+Console.WriteLine(phone); // output: "PhoneShop.Domain.Phone"
+
+// werkt wel
+Display(phone);
+// ... meer code
+
+void Display(Phone phone)
+{
+    Console.WriteLine($"{phone.Brand} {Phone.Type}"); 
+    // output "Apple IPhone 11"
+}
+```
+
+3) Je 'overridet' de 'ToString()' methode in de klasse zelf.
+```
+// werkt wel:
+Console.WriteLine(phone); // output "Apple IPhone 11"
+
+// als 
+class Phone 
+{
+    public override string ToString() => $"{Brand} {Type}";
+}
+```
+
+Maar welke van de drie mogelijkheden moet je nou gebruiken?
+
+Als je slechts op één plaats het object naar een string moet omzetten is de eerste methode waarschijnlijk het beste; een speciale methode maken is dan overdreven. Als je het vaker moet doen is een soort Display-methode maken beter, dan hoef je niet op tien plaatsen dezelfde code te typen.
+
+De ToString() methode overriden doe je normaal alleen voor kleine (console)projecten die je moet debuggen; als je een WinForms- of web-applicatie gebruikt gebruik je toch eerder de debugger dan Console.WriteLine-statements. Maar het is handig te weten dat je het ook zó kan doen!
+
 
 # C#-architectuur
 
@@ -373,7 +535,7 @@ Let wel: heel soms gebruiken mensen private properties en public fields; maar ze
 
 ## Wanneer moet iets public zijn, en wanneer private?
 
-C# heeft momenteel zeven verschillende "access modifiers": public, private, protected, internal, private protected en protected internal (https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/access-modifiers). "internal" zie je weleens voorbij komen in door Visual Studio gegenereerde code, "protected" in voorbeeldcode over object-georiënteerd programmeren (maar zelden in commerciële C#-code, omdat daar bijna nooit overerving wordt gebruikt). En "private protected" en "protected internal" zijn eerder om andere programmeurs mee te ergeren ("Jij weet vast niet eens wat het verschil is tussen private protected en protected internal!"). Maar "public" en "private" moet je zeker kennen en toepassen.
+C# heeft momenteel zeven verschillende "access modifiers": public, private, protected, internal, private protected en protected internal (https://docs.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/access-modifiers). "internal" zie je weleens voorbij komen in door Visual Studio gegenereerde code, "protected" in voorbeeldcode over object-georiënteerd programmeren (en soms in een Base class als je die gebruikt voor unit tests). En "private protected" en "protected internal" zijn eerder om andere programmeurs mee te ergeren ("Jij weet vast niet eens wat het verschil is tussen private protected en protected internal!"). Maar "public" en "private" moet je zeker kennen en toepassen.
 
 Wanneer moet iets public zijn?
 1) als het een property is (properties _mogen_ private zijn, maar dat is bijna nooit nuttig)
@@ -625,16 +787,118 @@ De oplossing hangt af van verschillende factoren:
 
 
 ### De programmeur is lui/heeft te weinig tijd
-In het eerste geval (de programmeur is lui of heeft weinig tijd), moet je beslissen wat belangrijker is: correctheid of robuustheid. Als correctheid belangrijker is moet je dan een NotImplementedException gooien, als die ooit door je baas wordt genoemd zal zij/hij je wel tijd willen geven om het goed op te lossen. Als robuustheid (het programma moet blijven runnen) belangrijker is, dan moet je gokken wat een redelijke waarde is; als je een geweten hebt zorg je er wel voor dat de gebruiker een boodschap te zien krijgt dat het resultaat mogelijk incorrect is.
+In het eerste geval (de programmeur is lui of heeft weinig tijd), moet je beslissen wat belangrijker is: correctheid of robuustheid. Als correctheid belangrijker is moet je een NotImplementedException gooien, als die ooit door je baas wordt genoemd zal zij/hij je wel tijd willen geven om het goed op te lossen. Als robuustheid (het programma moet blijven runnen) belangrijker is, dan moet je gokken wat een redelijke waarde is; als je een geweten hebt zorg je er wel voor dat de gebruiker een boodschap te zien krijgt dat het resultaat mogelijk incorrect is. Voorbeeld:
+
+```
+/* methode 1: weinig tijd, robuustheid belangrijker dan correctheid
+
+  Opmerking: probeer dit te vermijden of tenminste een soort popup te laten
+  zien... */
+int CalculateSpeed(Animal animal)
+{
+   if (animal is Cheetah) return 98;
+   if (animal is Rabbit) return 40;
+   // Let's just hope the user never looks up other animals
+   return 40; // Some default value. 
+}
+
+/* methode 2: weinig tijd, correctheid belangrijker dan robuustheid
+
+   Opmerking: dit wordt minder erg als je de exceptie ergens opvangt, 
+   dan kan 'hogere' code ergens de correcte communicatie naar de gebruiker 
+   afhandelen.
+
+   Opmerking 2: alternatief voor een exceptie is het resultaat te veranderen
+   in Result<int>. Alternatief kan je in C#10 en hoger overwegen een int?
+   terug te geven, hoewel dat nog steeds enigszins gevaarlijk is omdat de 
+   C#-compiler heel veel toestaat met null. */
+int CalculateSpeed(Animal animal)
+{
+   if (animal is Cheetah) return 98;
+   if (animal is Rabbit) return 40;
+   else throw new NotImplementedException("CalculateSpeed called " + 
+       $"on unknown animal {animal}.");
+}
+```
 
 ### Er is een bug in de code
-Als de methode _nooit_ zou moeten worden aangeroepen met een bepaalde waarde voor het argument (name mag bijvoorbeeld nooit null zijn) dan heb je meerdere keuzes.
+Als de methode _nooit_ zou moeten worden aangeroepen met een bepaalde waarde voor het argument ('name' mag bijvoorbeeld nooit null zijn) dan heb je meerdere keuzes.
 
-Als de foute input zorgt voor een exceptie (NullReferenceException, bijvoorbeeld) èn robuustheid minder belangrijk is kun je ervoor kiezen de code zo te houden; mocht er ooit een foute invoer zijn, dan zie je dat gelijk en kan je de bug eruit halen. En de code blijft zo simpel als mogelijk is.
+Als de foute input zorgt voor een exceptie (NullReferenceException, bijvoorbeeld) èn robuustheid minder belangrijk is kun je ervoor kiezen de code zo te houden; mocht er ooit een foute invoer zijn, dan zie je dat gelijk. Het programma crasht namelijk met een verwijzing naar de regel waar het fout gaat, en dan kan je de bug eruit halen. En de code blijft zo simpel als mogelijk is.
 
-Als de foute input niet zorgt voor een exceptie maar voor ander raar gedrag (bijvoorbeeld foute uitvoer), dan is het meestal beter om zelf een exceptie te gooien. 
+Als de foute input niet zorgt voor een exceptie maar voor ander raar gedrag (bijvoorbeeld foute uitvoer), dan is het meestal beter om zelf een exceptie te gooien. Voorbeeld:
 
+```
+void CalculateAgeIn2030(int birthyear)
+{
+    if (birthyear > DateTime.Now.Year) throw new IllegalArgumentException(
+        "CalculateAgeIn2030 error - can't be called with a birthyear " + 
+        $"{birthyear} that lies in the future!");
+	return 2030 - birthyear;
+}
+```
 
+Overigens kun je dit soort bugs soms voorkomen door een beter datatype te kiezen; zo kun je met settings in je project ervoor zorgen dat de compiler aangeeft als een parameter null kan zijn (dan vind je de bug al als je het programma compileert, inplaats van pas als je het runt). En soms kan je een simpel type (zoals string of int) vervangen door een type dat je zelf hebt bedacht en dat alleen maar correcte waarden kan hebben, zoals een Birthyear-klasse die waarden kan hebben van 1900 tot nu. Natuurlijk verplaats je in dat geval het exceptiegooiwerk simpelweg naar een andere plaats, maar als het goed is, hoef je dan het checken niet overal in je code te dupliceren, en loop je ook niet het gevaar dat je het ergens vergeet!
+
+Voor meer over alternatieven voor simpele typen (zie ook 'primitive obsession') zie https://enterprisecraftsmanship.com/posts/functional-c-primitive-obsession/
+
+### De gebruiker geeft een rare invoer - bijvoorbeeld een "a" inplaats van een getal
+
+Gebruikers (inclusief ikzelf) maken voortdurend fouten. We typen bijvoorbeeld een punt in plaats van een komma, of een letter in plaats van een getal. Zulke fouten werden vroeger in C# vaak afgehandeld door excepties:
+
+```
+var chosenNumberAsString = Console.ReadLine();
+try 
+{
+   var chosenNumber = int.Parse(chosenNumberAsString);
+   Display(_phones[chosenNumber]);
+} 
+catch (Exception e) 
+{
+   Console.WriteLine($"'{chosenNumberAsString}' is not a valid number.");
+}
+```
+
+Deze aanpak had nadelen. Het kleinste nadeel was de snelheid-een exceptie gooien is ongeveer 10x zo traag als gewone if-else-logica. Een groter nadeel is dat het gooien van excepties in dit geval niet echt passed lijkt - een vuistregel bij programmeren is dat je excepties moet gebruiken voor 'exceptionele' situaties. Dat een gebruiker een typefout maakt is helemaal niet zo bijzonder of onverwacht.
+
+Tegenwoordig geeft C# steeds meer manieren om te voorkomen dat je bij gebruikersfouten met excepties moet werken. Een modernere versie van bovenstaande code zou zijn:
+
+```
+var chosenNumberAsString = Console.ReadLine();
+bool isValidNumber = int.TryParse(chosenNumberAsString,
+    out int chosenNumber);
+if (isValidNumber)
+{
+   Display(_phones[chosenNumber]);
+} 
+else
+{
+   Console.WriteLine($"'{chosenNumberAsString}' is not a valid number.");
+}
+```
+
+Dit is weliswaar niet veel korter, maar wel helderder (zeker als je TryParse begrijpt).
+
+Hoe dan ook moet je er rekening mee houden (zeker in een desktop-applicatie) dat gebruikers fouten kunnen maken; voor een deel los je dat op door met bijvoorbeeld keuzemenus en UI-elementen die gedeactiveerd kunnen worden de kans op foute invoer te verminderen. Voor een ander deel doe je dat door in het programma zelf te checken of de invoer correct is, en de gebruiker feedback te geven als dat niet het geval is. Gebruikersfouten handel je dus normaal niet af met excepties, maar met if-else-statements, meestal al in de 'frontend'-code.
+
+### Een hacker probeert het programma te kraken
+
+Als je applicatie _geen_ desktopapplicatie is maar ergens op een server draait als backend voor een webpagina of mobiele applicatie, loop je een risico dat onaangename lieden proberen je data te stelen of te vernietigen of andere ellende voor je organisatie te veroorzaken. En via het internet is dat behoorlijk makkelijk als jij de applicatie niet hebt 'dichtgetimmerd'. Geniepige GET of POST-requests kunnen heel veel ellende veroorzaken. Dat betekent dat je nooit een datapakket dat over het web komt moet vertrouwen (al vertrouw je liefst ook geen invoer van een desktopapplicatie; maar het web is zeker gevaarlijk!)
+
+Hoe je met dat probleem omgaat: als programmeur moet je in theorie de OWASP-gidslijnen kennen voor veilige code (https://owasp.org/www-project-top-ten/), en bijna elke 'enterprise-taal', ook C#, heeft bibliotheken die in elk geval delen van de veiligheidsproblemen elimineren. En als je baas wat weet over softwareontwikkeling, huurt hij of zij ook pentesters in om te zien of de programmeurs iets over het hoofd gezien hebben.
+
+Hoe dan ook, hackers kunnen akelige dingen je programma insturen, en zelfs als je dingen goed beveiligt is de kans groot dat de runtime van je programma zelf ergens een exceptie gooit, zelfs als je zelf geen enkele 'throw' in de code hebt gezet. Helaas, als die exceptie nergens wordt opgevangen kan je programma crashen. Dat is ook schade, want je website wordt onbereikbaar voor legitieme gebruikers. Hoe voorkom je dat?
+
+Deze situatie kan je afhandelen door in de 'ingangen' van je programma (de actionmethods van de controllers) try-catch statements te zetten, al kun je C# (in elk geval ASP.NET, wat je normaal voor elke web-applicatie gebruikt) ook configureren zelf de fouten af te handelen. Maar hoe dan ook, als er iets onverwachts in je applicatie optreedt dat geen 'normale' gebruikersvergissing is, mag je gerust een exceptie gooien, want het is beter het proces te stoppen en een neutrale fout te geven (400: Bad Request) dan de hack te laten doorgaan. 
+
+### Samenvattend
+
+excepties gebruik ('throw') je normaal voor
+- legitieme invoer die (nog) niet correct wordt verwerkt door een methode
+- foute invoer die je verwacht en die je niet kunt of wilt afhandelen met een nullable of result-object - hoewel je dat vaak beter kunt oplossen door een ander datatype te gebruiken of mogelijke foute invoer op te vangen in de code die de procedure aanroept, bij de bron van de foute data, of het nou een gebruiker, een file of een website is.
+- als de invoer een aanval/hack lijkt te zijn
+
+In andere gevallen kun je beter proberen te werken met if-else logica of non-nullable of niet-primitieve typen, en de excepties die C# 'spontaan' gooit mogelijk nog te niet op te vangen als je nog in de development-fase bent (dan is het handig dat je bugs snel ontdekt), maar in productiecode wel ergens aan de frontend af te vangen. Al zal je dat laatste in ASP.NET ook kunnen doen door middleware en filters goed te configureren; try-cathes zullen niet altijd nodig zijn. 
 
 <div style="page-break-after: always;"></div>
 
