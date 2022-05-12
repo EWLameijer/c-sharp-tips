@@ -100,13 +100,13 @@ De simpelste manier is via de commandline - al betekent dat mogelijk dat je nog 
 Hoe dan ook, als Git op je computer geïnstalleerd is kun je een commandprompt openen en naar de directory gaan met de file of directory die je uit git wil hebben. Dan, voor een enkele file (zoals 'my_password.txt'):
 
 ```
-git rm --chached my_password.txt
+git rm --cached my_password.txt
 ```
 
 Voor een directory, zoals 'Bin' (let op de -r):
 
 ```
-git rm --chached -r Bin
+git rm --cached -r Bin
 ```
 
 Alternatief kan je ook een tool downloaden dat gespecialiseerd is in Git, dan kun je sowieso makkelijk veel dingen doen die moeilijk of onmogelijk zijn in Visual Studio; mijn huidige favoriet is Git Extensions (http://gitextensions.github.io/), waarmee het stoppen met het tracken van een file ("stop tracking this file") erg makkelijk is. Maar er is heel veel keuze (https://alternative.me/git-extensions), dus experimenteer gerust met een paar mogelijkheden.
@@ -257,6 +257,59 @@ In C# zou ik aanraden voor het parsen van integers TryParse te gebruiken, en all
 
 <div style="page-break-after: always;"></div>
 
+## Hoe maak ik een lijst en vul ik die gelijk met waarden?
+
+Lijsten gebruik je vaak in C#. En - zeker voor oefenprogramma's - vul je die lijsten normaal via programmacode. Op het internet doen mensen dat vaak als
+
+```
+var myList = new List<Person>();
+myList.Add(new Person { FirstName = "Pete", LastName = "Test1"});
+myList.Add(new Person { FirstName = "Clara", LastName = "Test2"});
+myList.Add(new Person { FirstName = "Dirk", LastName = "Test3"});
+```
+
+Maar omdat heel veel programmeurs dergelijke lijsten wilden maken, hebben de bedenkers van C# iets bedacht wat compacter is. En ook het voordeel heeft dat het ook werkt als de lijst een veld is, want anders zou je een aparte methode moeten maken om alle elementen toe te voegen.
+
+De originele lijst-creatiemethode is relatief simpel:
+
+```
+List<int> _myList = new List<int>{ 1, 5, 9, 12 };
+```
+
+Je herkent hierin hopelijk het patroon dat je gebruikt als je een nieuw object aanmaakt. Het lijkt zelfs sterk op een object initializer, waarin je in plaats van Person p = new Person { FirstName = "Dirk", LastName = "Test3"} een lijst objecten / waarden meegeeft.
+
+Nu is het kunnen gebruiken van minder karakters iets dat de ontwerpers van C# kennelijk graag doen, dus het bovenstaande kan worden afgekort om dat List`<int>` niet te hoeven herhalen:
+
+```
+List<int> _myList = new List<int>{ 1, 5, 9, 12 };
+
+// kan ook worden geschreven als 
+
+List<int> _myList = new(){ 1, 5, 9, 12 };
+```
+
+Zoals je ziet, moet je nog steeds _new_ gebruiken en () toevoegen; als je die weg zou laten krijg je een probleem omdat var _myList = {1, 5, 9, 12}; een _array_ van vier getallen zou declareren, en dat is geen lijst. En zonder () zou je een anoniem object maken, wat uiteraard ook geen lijst is (je kunt zo ontzettend veel verschillende dingen doen met C# dat het soms best verwarrend is).
+
+Hoe dan ook, zo maak je een eenvoudige lijst van integers. Maar wat als je een lijst wilt maken met objecten? Wel, net zoals je een int kan initialiseren als "int i = 1;", en het "1" deel terugkomt in de lijst van ints, initialiseer je een Person normaal met Person p = new Person {FirstName = "Joe", LastName = "Biden"}; Wat je (dit is C#) uiteraard kan afkorten tot Person p = new(){FirstName = "Joe", LastName = "Biden"};
+
+Nu zetten we dat dus in de lijst...
+
+```
+int x = 1;
+Person p = new(){FirstName = "Joe", LastName = "Biden"};
+
+
+List<int> _famousNumbers = new() {1, 3, 7, 12};
+List<Person> _famousPeople = new() { 
+    new(){FirstName = "Joe", LastName = "Biden"},
+    new(){FirstName = "Max", LastName = "Verstappen"},
+    new(){FirstName = "Bill", LastName = "Gates"}};
+```
+
+Uiteraard is dit bovenstaande nog steeds veel typen, maar het is minder typen dan meerdere keren "Add" te gebruiken, en je kunt het ook gebruiken als de lijst een veld is!
+
+<div style="page-break-after: always;"></div>
+
 # Debuggen
 
 <div style="page-break-after: always;"></div>
@@ -315,6 +368,7 @@ Als je slechts op één plaats het object naar een string moet omzetten is de ee
 
 De ToString() methode overriden doe je normaal alleen voor kleine (console)projecten die je moet debuggen; als je een WinForms- of web-applicatie gebruikt gebruik je toch eerder de debugger dan Console.WriteLine-statements. Maar het is handig te weten dat je het ook zó kan doen!
 
+<div style="page-break-after: always;"></div>
 
 # C#-architectuur
 
@@ -899,6 +953,63 @@ excepties gebruik ('throw') je normaal voor
 - als de invoer een aanval/hack lijkt te zijn
 
 In andere gevallen kun je beter proberen te werken met if-else logica of non-nullable of niet-primitieve typen, en de excepties die C# 'spontaan' gooit mogelijk nog te niet op te vangen als je nog in de development-fase bent (dan is het handig als je bugs snel ontdekt), maar in productiecode wel ergens aan de frontend af te vangen. Al zal je dat laatste in ASP.NET ook kunnen doen door middleware en filters goed te configureren; try-cathes zullen niet altijd nodig zijn. 
+
+<div style="page-break-after: always;"></div>
+
+## Waarom staat in C#-code zovaak IEnumerable als returntype in plaats van List?
+
+Mensen die met C# beginnen gebruiken vaak lijsten om reeksen van objecten op te slaan (tenzij ze de tutorials hebben gelezen van heel oude(rwetse) programmeurs, dan gebruiken ze arrays). Het lijkt dan ook logisch om List te gebruiken om waarden terug te geven door methoden; bij interfaces zie je dan ook vaak bij gevorderde beginners
+
+```
+List<Person> GetAll();
+```
+
+De meeste C#-developers in het bedrijfsleven zouden echter nooit zulke code schrijven, zij geven bijna nooit een concrete collectie terug, maar bijna altijd een interface. Bijvoorbeeld ICollection. Maar het populairst is IEnumerable, dus een professionele C#-programmeur zou de GetAll-methode definiëren als 
+
+```
+IEnumerable<Person> GetAll();
+```
+
+Waarom zou een rationeel iemand dat doen? Dat is toch alleen maar meer typewerk?
+
+Het is inderdaad meer typewerk. Maar dat typewerk is de moeite waard om drie redenen:
+
+1) (klein voordeel) Je bent flexibeler in welk datatype je eigenlijk teruggeeft: je kan een array returnen, een list of iets anders-dat is dan een implementatiedetail. En implementatiedetails probeer je zoveel mogelijk verborgen te houden voor de "cliënten" van de klasse. Net zoals je zoveel mogelijk 'private' gebruikt in plaats van 'public'.
+
+2) groter voordeel: je voorkomt bugs doordat je zorgt dat de compiler bepaalde dingen onmogelijk maakt. En, raar genoeg, is goed programmeren vaak juist het _beperken_ van wat iemand met je code kan doen.
+
+Als je een typische methode hebt die een lijst teruggeeft:
+
+```
+// PhoneService.cs
+
+public List<Phone> GetAll() => _phones;
+```
+
+En die ergens anders aanroept, kan je met Add() of Remove() telefoons toevoegen aan of verwijderen van de oorspronkelijke lijst. 
+
+```
+var phoneService = new PhoneService();
+var phones = phoneService.GetAll();
+
+phones.Add(new() { Brand = "Pear", Type = "Nonsense" });
+
+var newPhones = phoneService.GetAll();
+foreach (var phone in newPhones)
+{
+    Console.WriteLine(phone.Brand);
+}
+```
+
+Waarschijnlijk is dat niet wat je wilt (niet elke gebruiker zou telefoons mogen toevoegen of verwijderen). En zelfs als dat wel is wat je wilt, zijn alle veranderingen verdwenen als je het programma opnieuw opstart, en dat is dan zeker niet wat je wilt!
+
+Maar wat als je het returntype van GetAll() verandert in IEnumerable? Dan mag de Add niet meer (IEnumerable heeft geen Add()). En zelfs als je zegt var phones = phoneService.GetAll().ToList();, dan is die lijst van telefoons alleen maar een kopie van het origineel, en wordt het origineel niet veranderd als je een telefoon toevoegt.
+
+3) een nog groter voordeel is dat je met een IEnumerable data 'lui' kan ophalen. Als je een lijst teruggeeft, moet daar alle data in staan. Dat is niet erg voor een PhoneShop met 10 telefoons, maar als een bedrijf als Google of Bol.com dat zou doen zou in die lijst honderden zo niet tienduizenden items staan. Dat is best veel, zeker als je honderden of zelfs miljoenen gebruikers tegelijkertijd hebt! Want elk item dat je ophaalt kost kostbare geheugenruimte op de server, en kostbare bandbreedte op de verbinding tussen de databaseserver en de webserver. Google, Bol, Amazon, en een boel andere bedrijven werken dus (vermoedelijk) niet met lijsten, maar met IEnumerables (of hoe luie datastructuren ook heten in de programmeertalen die zij gebruiken). 
+
+Wat een 'luie datastructuur' doet is wachten totdat de gebruiker (of gebruikende programmeur) een waarde opvraagt; en dan wordt die data pas opgehaald of berekend. Het is als het verschil tussen een brood kopen bij de bakker en een hamburger bestellen bij McDonalds: de bakker heeft de hele ochtend gezwoegd om tientallen broden te bakken, maar kan wel onmiddellijk het brood leveren, bij McDonalds wordt een hamburger alleen gemaakt als er een klant voor is; dat kost wat meer tijd (voor de klant), maar is desalniettemin een zeer economisch/winstgevend model.
+
+Stel je voor  
 
 <div style="page-break-after: always;"></div>
 
