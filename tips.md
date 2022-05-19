@@ -972,7 +972,7 @@ IEnumerable<Person> GetAll();
 
 Waarom zou een rationeel iemand dat doen? Dat is toch alleen maar meer typewerk?
 
-Het is inderdaad meer typewerk. Maar dat typewerk is de moeite waard om drie redenen:
+Het is inderdaad meer typewerk. Maar dat typewerk is de moeite waard om twee redenen:
 
 1) (klein voordeel) Je bent flexibeler in welk datatype je eigenlijk teruggeeft: je kan een array returnen, een list of iets anders-dat is dan een implementatiedetail. En implementatiedetails probeer je zoveel mogelijk verborgen te houden voor de "cliënten" van de klasse. Net zoals je zoveel mogelijk 'private' gebruikt in plaats van 'public'.
 
@@ -1005,11 +1005,15 @@ Waarschijnlijk is dat niet wat je wilt (niet elke gebruiker zou telefoons mogen 
 
 Maar wat als je het returntype van GetAll() verandert in IEnumerable? Dan mag de Add niet meer (IEnumerable heeft geen Add()). En zelfs als je zegt var phones = phoneService.GetAll().ToList();, dan is die lijst van telefoons alleen maar een kopie van het origineel, en wordt het origineel niet veranderd als je een telefoon toevoegt.
 
-3) een nog groter voordeel is dat je met een IEnumerable data 'lui' kan ophalen. Als je een lijst teruggeeft, moet daar alle data in staan. Dat is niet erg voor een PhoneShop met 10 telefoons, maar als een bedrijf als Google of Bol.com dat zou doen zou in die lijst honderden zo niet tienduizenden items staan. Dat is best veel, zeker als je honderden of zelfs miljoenen gebruikers tegelijkertijd hebt! Want elk item dat je ophaalt kost kostbare geheugenruimte op de server, en kostbare bandbreedte op de verbinding tussen de databaseserver en de webserver. Google, Bol, Amazon, en een boel andere bedrijven werken dus (vermoedelijk) niet met lijsten, maar met IEnumerables (of hoe luie datastructuren ook heten in de programmeertalen die zij gebruiken). 
+@@@3: lazy evaluation, geen extra structuren maken voor tussendata...
+https://typealias.com/guides/when-to-use-sequences/ Wel: doet LINQ immediate execution voor List? Of is alles deferred?
 
-Wat een 'luie datastructuur' doet is wachten totdat de gebruiker (of gebruikende programmeur) een waarde opvraagt; en dan wordt die data pas opgehaald of berekend. Het is als het verschil tussen een brood kopen bij de bakker en een hamburger bestellen bij McDonalds: de bakker heeft de hele ochtend gezwoegd om tientallen broden te bakken, maar kan wel onmiddellijk het brood leveren, bij McDonalds wordt een hamburger alleen gemaakt als er een klant voor is; dat kost wat meer tijd (voor de klant), maar is desalniettemin een zeer economisch/winstgevend model.
+List<int> myList = new() {1, 0, -4, 3 , 7, -12};
+var newList = myList.Select( x => {Console.WriteLine(x); return x;}).Where( x => x > 0).Select( x => {Console.WriteLine(x); return x;}).Select(x => x*x).Select( x => {Console.WriteLine(x); return x;});
+foreach (var x in newList) { Console.WriteLine(x);} 
 
-Stel je voor  
+Een diepere uitleg van IEnumerable vs List (en IList) kun je vinden in https://www.claudiobernasconi.ch/2013/07/22/when-to-use-ienumerable-icollection-ilist-and-list/ . Samengevat zegt Bernasconi dat je het meest beperkende type moet gebruiken dat in jouw situatie werkt: IEnumerable is beter dan List, ICollection of IList omdat je niet zomaar elementen kan toevoegen of verwijderen.
+
 
 <div style="page-break-after: always;"></div>
 
