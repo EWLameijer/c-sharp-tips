@@ -11,6 +11,7 @@
 - 67.5 stage, commit, push (beetje als Add Migration; Update Database)
 - 55 List vs IEnumerable
 - 25 List-initialisatie - hoe te doen?
+- 10 get; init; // sebastiaan
 -  2.5 Swicth-expression 
 - 2.5 foreach, for, LINQ, do, while 
 - // nog niet geobserveerd...
