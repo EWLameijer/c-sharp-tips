@@ -5,6 +5,9 @@
 // en dan quiz fase 1
 
 
+- 500 hexagonal architecture
+- 200 stack vs heap
+- 150 static 
 - 67.5 stage, commit, push (beetje als Add Migration; Update Database)
 - 55 List vs IEnumerable
 - 25 List-initialisatie - hoe te doen?
