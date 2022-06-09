@@ -1017,6 +1017,43 @@ Een diepere uitleg van IEnumerable vs List (en IList) kun je vinden in https://w
 
 <div style="page-break-after: always;"></div>
 
+# Wat is "hexagonale architectuur" en waarom is het belangrijk?
+
+Heel veel werk van een computer is niet 'berekenen' maar het inlezen, transformeren en opslaan van data.
+
+Zo kan het zijn dat je een lijst telefoons moet inlezen van een CSV- of XML-bestand, en het op moet slaan in een database.
+
+Nu zijn er methoden die XML rechtstreeks kunnen omzetten in databasetabellen (er zijn ongeveer overal methodes en libraries voor). Maar meestal is dat een slecht idee.
+
+Een _klein_ bezwaar is nog dat als je de database of het inleesformaat gaat vervangen, je alle code overnieuw moet schrijven.
+
+Een groter probleem is dat je normaal controle wilt hebben over wat het gebeurt. Wat als een leverancier een XML-file aanlevert met een fout erin? Dan crasht je database of wordt die gecorrumpeerd.
+
+En als het formaat in de database anders is dan in de XML-file, wie heeft dan gelijk?
+
+Daarom wil je een "single source of truth" hebben. En als programmeurs heb je die het liefst in broncode, wat compacter is dan een file en flexibeler dan databasecode.
+
+Je gebruikt dus TWEE stappen in plaats van één: 
+1) je zet de XML om je domeinobject, bijvoorbeeld een Phone
+2) Je slaat de phone op in de database.
+
+Voor beide stappen maak je normaal een aparte service. Je krijgt dus een XmlImportService en een DatabaseService (al kun je die DatabaseService ook bijvoorbeeld PhoneService noemen).
+
+Dit wordt ook wel 'hexagonale architectuur' genoemd en heeft dus meerdere voordelen:
+
+1) je weet altijd welke data je nodig hebt, er is een 'single source of truth'
+2) die single source of truth is op een handige plaats, in de code
+3) als er een inconsistentie is tussen input en datamodel merk je dat en wordt de data niet gecorrumpeerd.
+4) als er een inconsistentie is tussen datamodel en database krijg je een foutmelding en wordt de data niet gecorrumpeerd.
+5) het is veel minder werk een output (zoals een database) of input (zoals een XML-file) te vervangen door een alternatief.
+
+Zelf zie ik een goede service als een pollepel: het ene uiteinde zit altijd in het echte eten (het domeinobject, bijvoorbeeld een Phone), het andere uiteinde zit in je hand (input, zoals XMLfile, of output, zoals database-uiteraard kunnen zowel een database als een XMLfile zowel voor input als output gebruikt worden).
+
+Link: https://en.wikipedia.org/wiki/Hexagonal_architecture_(software)
+
+
+<div style="page-break-after: always;"></div>
+
 # Gebruiksvriendelijkheid
 
 <div style="page-break-after: always;"></div>
