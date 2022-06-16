@@ -1017,7 +1017,7 @@ Een diepere uitleg van IEnumerable vs List (en IList) kun je vinden in https://w
 
 <div style="page-break-after: always;"></div>
 
-# Wat is "hexagonale architectuur" en waarom is het belangrijk?
+## Wat is "hexagonale architectuur" en waarom is het belangrijk?
 
 Heel veel werk van een computer is niet 'berekenen' maar het inlezen, transformeren en opslaan van data.
 
@@ -1035,7 +1035,7 @@ Daarom wil je een "single source of truth" hebben. En als programmeurs heb je di
 
 Je gebruikt dus TWEE stappen in plaats van één: 
 1) je zet de XML om je domeinobject, bijvoorbeeld een Phone
-2) Je slaat de phone op in de database.
+2) Je slaat de Phone op in de database.
 
 Voor beide stappen maak je normaal een aparte service. Je krijgt dus een XmlImportService en een DatabaseService (al kun je die DatabaseService ook bijvoorbeeld PhoneService noemen).
 
@@ -1047,9 +1047,12 @@ Dit wordt ook wel 'hexagonale architectuur' genoemd en heeft dus meerdere voorde
 4) als er een inconsistentie is tussen datamodel en database krijg je een foutmelding en wordt de data niet gecorrumpeerd.
 5) het is veel minder werk een output (zoals een database) of input (zoals een XML-file) te vervangen door een alternatief.
 
-Zelf zie ik een goede service als een pollepel: het ene uiteinde zit altijd in het echte eten (het domeinobject, bijvoorbeeld een Phone), het andere uiteinde zit in je hand (input, zoals XMLfile, of output, zoals database-uiteraard kunnen zowel een database als een XMLfile zowel voor input als output gebruikt worden).
+Zelf zie ik een goede service als een pollepel: het ene uiteinde zit altijd in het echte eten (het domeinobject, bijvoorbeeld een Phone), het andere uiteinde zit in je hand (input, zoals XMLfile, of output, zoals database-uiteraard kunnen zowel een database als een XMLfile zowel voor input als output gebruikt worden). Een klasse die rechtstreeks inputdata omzet in outputdata (bv JSON naar database) moet je dus liefst vermijden!
 
-Link: https://en.wikipedia.org/wiki/Hexagonal_architecture_(software)
+Links: 
+- https://en.wikipedia.org/wiki/Hexagonal_architecture_(software)
+- https://alistair.cockburn.us/hexagonal-architecture/​
+- ​https://martinfowler.com/articles/badri-hexagonal/
 
 
 <div style="page-break-after: always;"></div>
