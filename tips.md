@@ -1,3 +1,68 @@
+# Hoe werken objecten en parameters?
+
+<div style="page-break-after: always;"></div>
+
+## Wat zijn de stack en de heap en waarom zijn ze belangrijk?
+
+In een C#-programma (en overigens ook in de meeste andere programmeertalen) maak je veel gebruik van variabelen. Nu denken beginnende programmeurs niet altijd na over variabelen, ze zien het hoogstens als vakjes waarin waarden worden opgeslagen. 
+
+Maar een computer is geen wiskundige abstractie, maar een fysiek apparaat. Computerbouwers en programmeertaalontwerpers weten al decennia dat 'gewoon iets in het geheugen opslaan' een computer heel erg traag zou maken. Daarom splitsen ze het geheugen op in een paar delen, waarvan de stack en de heap de belangrijkste zijn. Nu zou je je daar als programmeur normaal geen zorgen over maken (of het geheugen in 1 of 100 delen is opgesplitst is toch een 'implementatiedetail'?) Helaas 'lekt' die keuze voor twee geheugendelen en de gevoelde noodzaak programma's snel te laten werken ook door in de meeste programmeertalen.
+
+Beschouw de volgende code:
+
+```
+class Person
+{
+   public string FirstName { get; set; }
+   public string LastName { get; set; }
+}
+
+class Test 
+{
+   static void MakeSix(int a)
+   {
+       a = 6;
+   }
+   
+   static void MakeFlip(Person p)
+   {
+       p.FirstName = "Flip";
+   }
+   
+   public static void Main()
+   {
+       int a = 3; 
+       Person joe = new Person { FirstName = "Joe", LastName = "Biden" };
+       Console.WriteLine($"The number is {a}, the person's called {joe.FirstName}");
+       
+       MakeSix(a);
+       MakeFlip(joe);
+       Console.WriteLine($"The number is {a}, the person's called {joe.FirstName}");
+   }   
+}
+```
+
+Wat komt hier uit?
+
+Wel... "The number is 3, the person's called Flip".
+
+a wordt dus NIET vervangen, maar joe's naam wel. Wat is hier aan de hand?
+
+Wat hier aan de hand is, is dat een object (zoals de Person) anders wordt opgeslagen dan een getal (zoals de a).
+
+Alle lokale variabelen in een methode (inclusief parameters) worden normaal op de "stack" gezet. De stack is een relatief klein geheugengebied, waar parameters als borden worden opgestapeld - en ook weer worden verwijderd. Het voordeel is dat het aanmaken van een lokale variabele erg snel is: je plaatst het gewoon bovenop de stapel, waar bijna altijd ruimte is. Mocht er geen ruimte zijn, door bijvoorbeeld een verkeerd geprogrammeerd of op een te groot probleem toegepast recursief algoritme, dan krijg je een zogenaamde 'stack overflow', tegenwoordig het meest bekend van de website.
+
+De stack heeft wel twee nadelen; allereerst is de stack redelijk klein, dus grote datastructuren (zoals een jpeg-plaatje) passen er niet op, maar een fundamenteler nadeel is dat een stack net als een stapel borden altijd weer van boven naar onder wordt opgeruimd. Als je data langer wilt onthouden dan in 1 methode - wel, dat lukt normaal niet. Want alle data van de methode wordt van de stack verwijderd als de methode is afgelopen. Ook om ruimte te maken voor de data van methoden die daarna worden aangeroepen.
+
+Om die problemen op te lossen reserveren programmeertalen het grootste deel van het geheugen als een soort 'algemene opslagruimte', die de 'heap' wordt genoemd. Een heap werkt als een boedelopslag: een runtime (het proces dat een programma uitvoert) gaat naar de heap toe, en zegt iets als "ik heb hier een JPEG-plaatje van 10232245 bytes. Dat wil ik graag opslaan. Heb je daar ruimte voor?" Dan gaat de heap-manager kijken of er een aaneengesloten blok van minstens 10232245 bytes vrij is. 
+
+// variabele lengte slecht voor stack, grote lengte ook voor returnwaarde en parameters
+
+
+
+
+<div style="page-break-after: always;"></div>
+
 # Visual Studio-tips
 
 <div style="page-break-after: always;"></div>
@@ -1041,20 +1106,22 @@ Voor beide stappen maak je normaal een aparte service. Je krijgt dus een XmlImpo
 
 Dit wordt ook wel 'hexagonale architectuur' genoemd en heeft dus meerdere voordelen:
 
-1) je weet altijd welke data je nodig hebt, er is een 'single source of truth'
-2) die single source of truth is op een handige plaats, in de code
-3) als er een inconsistentie is tussen input en datamodel merk je dat en wordt de data in de database niet gecorrumpeerd.
-4) als er een inconsistentie is tussen datamodel en database krijg je een foutmelding en wordt de data in de database niet gecorrumpeerd.
-5) het is veel minder werk een output (zoals een database) of input (zoals een XML-file) te vervangen door een alternatief.
+1. je weet altijd welke data je nodig hebt, er is een 'single source of truth'
+2. die single source of truth is op een handige plaats, in de code
+3. als er een inconsistentie is tussen input en datamodel merk je dat en wordt de data in de database niet gecorrumpeerd.
+4. als er een inconsistentie is tussen datamodel en database krijg je een foutmelding en wordt de data in de database niet gecorrumpeerd.
+5. het is veel minder werk een output (zoals een database) of input (zoals een XML-file) te vervangen door een alternatief.
 
-Zelf zie ik een goede service als een pollepel: het ene uiteinde zit altijd in het echte eten (het domeinobject, bijvoorbeeld een Phone), het andere uiteinde zit in je hand. Dat andere uiteinde zit dus in input, zoals een XMLfile, of output, zoals een database.
+Zelf zie ik een goede service als een pollepel: het ene uiteinde zit altijd in je hand (van jou als programmeur, dus het domeinobject). Het andere uiteinde zit in de pan (de database, de XML-file, de user interface). En het doel van de pollepel/service is data van de ene kant naar de andere kant te brengen. 
 
-Let wel: het gaat hier niet om dat er een "input-kant" en een "output-kant" is; een database gebruik je normaal zowel om van te lezen als naar te schrijven. De kern is de transformatie van data in een bepaald formaat van (en mogelijk naar) data in 'code-formaat'/een domeinobject. Een klasse die rechtstreeks inputdata omzet in outputdata (bv JSON naar database) moet je dus liefst vermijden!
+Let wel: het gaat hier niet om dat er een "input-kant" en een "output-kant" is; een database gebruik je normaal zowel om van te lezen als naar te schrijven. De kern is de transformatie van data in een bepaald formaat van (en mogelijk naar) data in 'code-formaat'/een domeinobject. 
 
-Links: 
-- https://en.wikipedia.org/wiki/Hexagonal_architecture_(software)
-- https://alistair.cockburn.us/hexagonal-architecture/​
-- ​https://martinfowler.com/articles/badri-hexagonal/
+Een klasse die rechtstreeks inputdata omzet in outputdata (bv JSON naar database) moet je dus liefst vermijden! Net zoals een topkok aparte lepels gebruikt voor het vlees en de groente en de aardappels, zo gebruik je als programmeur aparte services voor communicatie met database, XML-files, user interface (al wordt dat laatste wegens de architectuur van C# normaal geen service genoemd, maar een 'entry point' (wegens de main-functie) - al blijft de taak net zo gespecialiseerd: informatie van en naar de gebruiker brengen...
+
+Links:   
+- https://en.wikipedia.org/wiki/Hexagonal_architecture_(software)  
+- https://alistair.cockburn.us/hexagonal-architecture/​  
+- ​https://martinfowler.com/articles/badri-hexagonal/  
 
 
 <div style="page-break-after: always;"></div>
