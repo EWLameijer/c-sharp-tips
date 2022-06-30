@@ -1019,7 +1019,7 @@ Een diepere uitleg van IEnumerable vs List (en IList) kun je vinden in https://w
 
 ## Wat is "hexagonale architectuur" en waarom is het belangrijk?
 
-Heel veel werk van een computer is niet 'berekenen' maar het inlezen, transformeren en opslaan van data.
+Heel veel werk van een computer, in elk geval voor de 'enterprise'-programma's waarvoor je C# gebruikt, is niet 'berekenen' maar het inlezen, transformeren en opslaan van data.
 
 Zo kan het zijn dat je een lijst telefoons moet inlezen van een CSV- of XML-bestand, en het op moet slaan in een database.
 
@@ -1031,7 +1031,7 @@ Een groter probleem is dat je normaal controle wilt hebben over wat het gebeurt.
 
 En als het formaat in de database anders is dan in de XML-file, wie heeft dan gelijk?
 
-Daarom wil je een "single source of truth" hebben. En als programmeurs heb je die het liefst in broncode, wat compacter is dan een file en flexibeler dan databasecode.
+Daarom wil je een "single source of truth" hebben. En als programmeurs heb je die het liefst in broncode, wat compacter is dan een XML-file en flexibeler dan databasecode. En bovendien netjes in version control staat.
 
 Je gebruikt dus TWEE stappen in plaats van één: 
 1) je zet de XML om je domeinobject, bijvoorbeeld een Phone
@@ -1043,11 +1043,13 @@ Dit wordt ook wel 'hexagonale architectuur' genoemd en heeft dus meerdere voorde
 
 1) je weet altijd welke data je nodig hebt, er is een 'single source of truth'
 2) die single source of truth is op een handige plaats, in de code
-3) als er een inconsistentie is tussen input en datamodel merk je dat en wordt de data niet gecorrumpeerd.
-4) als er een inconsistentie is tussen datamodel en database krijg je een foutmelding en wordt de data niet gecorrumpeerd.
+3) als er een inconsistentie is tussen input en datamodel merk je dat en wordt de data in de database niet gecorrumpeerd.
+4) als er een inconsistentie is tussen datamodel en database krijg je een foutmelding en wordt de data in de database niet gecorrumpeerd.
 5) het is veel minder werk een output (zoals een database) of input (zoals een XML-file) te vervangen door een alternatief.
 
-Zelf zie ik een goede service als een pollepel: het ene uiteinde zit altijd in het echte eten (het domeinobject, bijvoorbeeld een Phone), het andere uiteinde zit in je hand (input, zoals XMLfile, of output, zoals database-uiteraard kunnen zowel een database als een XMLfile zowel voor input als output gebruikt worden). Een klasse die rechtstreeks inputdata omzet in outputdata (bv JSON naar database) moet je dus liefst vermijden!
+Zelf zie ik een goede service als een pollepel: het ene uiteinde zit altijd in het echte eten (het domeinobject, bijvoorbeeld een Phone), het andere uiteinde zit in je hand. Dat andere uiteinde zit dus in input, zoals een XMLfile, of output, zoals een database.
+
+Let wel: het gaat hier niet om dat er een "input-kant" en een "output-kant" is; een database gebruik je normaal zowel om van te lezen als naar te schrijven. De kern is de transformatie van data in een bepaald formaat van (en mogelijk naar) data in 'code-formaat'/een domeinobject. Een klasse die rechtstreeks inputdata omzet in outputdata (bv JSON naar database) moet je dus liefst vermijden!
 
 Links: 
 - https://en.wikipedia.org/wiki/Hexagonal_architecture_(software)
