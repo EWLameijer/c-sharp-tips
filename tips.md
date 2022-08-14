@@ -215,6 +215,33 @@ Console.WriteLine($"{a}, {b}");
 
 <div style="page-break-after: always;"></div>
 
+## Ik wil een string over meerdere regels laten lopen / ik wil een string met minder '/'-tekens
+
+Als je een string over meerdere regels wilt laten lopen (met nette opmaak) of je je ergert aan alle // in een string: gebruik "verbatim strings", oftewel strings die beginnen met een @. Niet te verwarren met de $ die het begin vormt van geïnterpoleerde strings.
+
+Er zijn twee gevallen die lastig zijn met een normale string: strings met veel 'escape characters / backslashes', zoals filenamen en regexes, en strings die over meerdere regels moeten lopen, maar wel mooi moeten worden opgemaakt. In beide gevallen gebruik je in C# een 'verbatim string'. Dat lijkt op een normale string, maar dan met een '@' ervoor. Zoals https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/tokens/verbatim al aangeeft:
+
+```
+// Filenamen
+
+string filename1 = "c:\\documents\\files\\u0066.txt"; // normaal
+string filename2 = @"c:\documents\files\u0066.txt"; // verbatim: is handiger
+
+// Voor netjes opgemaakte tekst
+string html1 = "<html>\n    <body>\n        <p>Hallo!</p>\n" + 
+       "    </body>\n</html";
+string html2 = @"
+<html>
+    <body>
+        <p>Hallo</p>
+    </body>
+</html>";
+```
+
+Je kunt overigens @ en $ combineren, de volgorde maakt niet (meer) uit, dus @$"" en $@"" werken allebei hetzelfde!
+
+<div style="page-break-after: always;"></div>
+
 ## Ik heb een heel simpele methode, kan die korter dan {... return a * a; }?
 
 Als de methode slechts 1 statement heeft die 1 waarde teruggeeft kan je een "expression-bodied method" gebruiken.
@@ -252,7 +279,7 @@ Waarom overigens die dikke pijl (=>) in plaats van de mogelijk meer voor de hand
 
 Vaak moet je bij programmeren een string (zoals "142") omzetten in een nummer (dus 142), om het te kunnen gebruiken in berekeningen of bij transacties met databases en dergelijke.
 
-Oorspronkelijk werd dit in C# gedaan met de 'Parse-methoden': int myInt  = int.Parse(myString); double myDouble = double.Parse(myString); ... enzovoort.
+Oorspronkelijk werd dit in C# gedaan met de 'Parse-methoden' en/of de 'Convert-methoden': int myInt  = int.Parse(myString); double myDouble = double.Parse(myString); int myOtherInt = Convert.ToInt32(myString); double myOtherDouble = Convert.ToDouble(myString); ... enzovoorts.
 
 Deze methodes waren eenvoudig te gebruiken - behalve als de string toevallig geen nummer representeerde. Dan gooiden ze een exceptie, zoals een ArgumentNullException, een FormatException, of een OverflowException (https://docs.microsoft.com/en-us/dotnet/api/system.int32.parse?view=net-6.0#system-int32-parse(system-string)). Het was nogal veel werk voor een programmeur om dat allemaal netjes af te handelen, en op zijn minst had je een lelijk try-catch-blok nodig.
 
@@ -375,6 +402,111 @@ Uiteraard is dit bovenstaande nog steeds veel typen, maar het is minder typen da
 
 <div style="page-break-after: always;"></div>
 
+
+
+## LINQ: een korte inleiding
+Heel vaak werk je in C# met collecties (List`<T>`, IEnumerable`<T>`) waar je iets mee moet doen. Veelvoorkomende operaties zijn
+- transformatie (ik heb een lijst strings en ik wil die omzetten in een lijst getallen). Qua typen: List`<T>` -> List`<R>` 
+- filtering (ik heb een lijst getallen en wil daar alleen de priemgetallen uit hebben). Qua typen: List`<T>` -> List`<T>`
+- samenvatting/reductie (ik heb een lijst getallen en wil daar het grootste getal uit hebben, of het gemiddelde): List`<T>` -> T 
+
+In de informatica worden deze drie taken "map-filter-reduce" genoemd. Omdat C# echter geprobeerd heeft die operaties makkelijk te maken voor ontwikkelaars die weinig van informatica-theorie weten, gebruikt C# de namen van SQL: Transformatie ('map') wordt `Select`, Filteren ('filter') wordt `Where`, en reductie (ook wel 'fold' genoemd) heet `Aggregate`.
+
+### LINQ gotcha 1: bij oude code moet je `using System.Linq` gebruiken
+De bibliotheek om zulke bewerkingen op collecties uit te voeren zat niet oorspronkelijk in C#, maar is er pas in 2007 bij gekomen. En deze bibliotheek heet 'LINQ' (voor 'Language INtegrated Query'). Nu was het (tot eind vorig jaar) in werkelijkheid niet helemaal geïntegreerd in C#, je moest onthouden dat je een speciale 'using' aan het begin van een .cs file moest zetten om LINQ te kunnen gebruiken. Sinds C#10 met zijn 'implicit usings' wordt LINQ echter automatisch geladen, en is het eindelijk echt geïntegreerd. Maar als je met oudere versies van C# werkt en `Select` of `Where` lijken niet te werken, dan moet je aan de bovenkant van de file een `using System.Linq` toevoegen.
+
+### LINQ gotcha 2: LINQ geeft collecties altijd als IEnumerable terug.
+Een tweede 'gotcha' in LINQ is dat LINQ-queries weliswaar op allerlei typen collecties kunnen werken (zoals List, array of IEnumerable) maar, als ze een sequentie teruggeven (dus niet het ene element bij een reductie), altijd een IEnumerable teruggeven (of een soort IEnumerable, zoals een IOrderedEnumerable bij een sortering). Dat kan je omzetten in een andere sequentie met zeg .ToList() of .ToArray() of .AsQueryable(), maar vaak is dat niet nodig, een foreach loop kan bijvoorbeeld goed werken met een IEnumerable. Pas als je iets nodig hebt als alleen het zesde element (met `nameOfNewSequence[5]`) moet je het wel in een lijst omzetten.
+
+### LINQ gotcha 3: LINQ verandert de oorspronkelijke collectie nooit
+Als je iets wilt sorteren moet je bijvoorbeeld niet het volgende doen:
+```
+List<string> names = new() { "Bob", "Fred", "Alice" };
+names.OrderBy(n => n);
+foreach (string name in names) Console.WriteLine(name); 
+// prints out Bob Fred Alice, want names blijft identiek
+```
+
+Maar DIT:
+
+```
+// beter
+List<string> names = new() { "Bob", "Fred", "Alice" };
+IOrderedEnumerable<string> sortedNames = names.OrderBy(n => n);
+foreach (string name in sortedNames) Console.WriteLine(name); 
+// prints out Alice Bob Fred
+```
+
+Let wel: Visual Studio rapporteert soms een message als je de eerste code gebruikt... als drie kleine grijze puntjes. Dus kleine les 1: als je bugs hebt, check je messages. Kleine les 2: je kunt dit soort messages ook door Visual Studio laten rapporteren als een (beter zichtbare) warning.
+
+
+Hoe dan ook, voorbeelden van gebruik van LINQ:
+```
+List<int> numbers = new() { 1, 2, 5, 10, 20 };
+
+
+// - transformatie/Select: 
+
+IEnumerable<int> squares = numbers.Select(n => n * n);
+// squares is [1, 4, 25, 100, 400] 
+
+
+// - filteren/Where
+
+IEnumerable<int> evenNumbers = numbers.Where(n => n % 2 == 0);
+// evenNumbers is [2, 10, 20]
+
+
+// -reductie: Sum/Max/Count (en een boel meer!)
+
+int total = numbers.Sum();
+// total is 38
+```
+
+Er zijn een heleboel LINQ-methodes (zie https://docs.microsoft.com/en-us/dotnet/api/system.linq.enumerable.count?view=net-6.0), een paar om te onthouden zijn:
+- _Transformatie:_ Select, OrderBy, Reverse, ThenBy
+- _Filtering:_ Where, Distinct, Take, TakeLast, Skip, SkipLast
+- _Reductie:_ Any, All, Average, Concat, Count, First, FirstOrDefault, Max, MaxBy, Min, MinBy, Single, SingleOrDefault, Sum
+
+Je hoeft deze niet uit je hoofd te leren, het belangrijkste is om te onthouden dat als je iets wilt doen met een lijst dat andere programmeurs ook weleens zouden willen (zoals filteren of sorteren), of als je één enkel stuk data wilt krijgen uit een lijst, dat er waarschijnlijk een LINQ-methode bestaat die precies dat doet!
+
+### LINQ tip: Als LINQ een () heeft kan je de expressie vaak vereenvoudigen
+
+Als het laatste deel van een LINQ-expressie geen argumenten heeft, en voorafgegaan wordt door een ander statement, kun je vaak het andere statement vervangen door het laatste deel, en het laatste deel de oorspronkelijke argumenten van het voorlaatste deel geven. Dus c.A(x).B(); kun je vaak vereenvoudigen tot c.B(x); Concreet:
+```
+class Customer 
+{
+    public string Name { get; set; }
+
+    public int Id { get; set; }
+}
+
+
+List<Customer> customers = new() 
+{ 
+    new() { Name = "Willem", Id = 1},
+    new() { Name = "Klara", Id = 2 }
+};
+
+// kan 
+Customer customerOne = customers.Where(c => c.Id == 1).FirstOrDefault();
+Console.WriteLine(customerOne.Name);
+
+// beter/simpeler:
+Customer customerTwo = customers.FirstOrDefault(c => c.Id == 2);
+Console.WriteLine(customerTwo.Name);
+
+// kan 
+string lastInAlphabet = customers.Select(c => c.Name).Max();
+Console.WriteLine(lastInAlphabet);
+
+// beter/simpeler
+string lastInAlphabet2 = customers.Max(c => c.Name);
+Console.WriteLine(lastInAlphabet2);
+```
+
+<div style="page-break-after: always;"></div>
+
 # Debuggen
 
 <div style="page-break-after: always;"></div>
@@ -432,6 +564,20 @@ Maar welke van de drie mogelijkheden moet je nou gebruiken?
 Als je slechts op één plaats het object naar een string moet omzetten is de eerste methode waarschijnlijk het beste; een speciale methode maken is dan overdreven. Als je het vaker moet doen is een soort Display-methode maken beter, dan hoef je niet op tien plaatsen dezelfde code te typen.
 
 De ToString() methode overriden doe je normaal alleen voor kleine (console)projecten die je moet debuggen; als je een WinForms- of web-applicatie gebruikt gebruik je toch eerder de debugger dan Console.WriteLine-statements. Maar het is handig te weten dat je het ook zó kan doen!
+
+Opmerkingen:
+
+1. Let op de juiste "signature" van de methode: public override string ToString() {}
+
+2. Je hoeft ToString() meestal niet expliciet aan te roepen; Console.WriteLine bijvoorbeeld roept automatisch ToString() aan op zijn argumenten. Roep ToString() _alleen_ aan als de compiler erom zeurt.
+
+3. ToString is vooral handig voor het debuggen, en voor kleine (meestal privé)-applicaties; in grotere programma's (zeker internationale) heb je meestal aparte klassen die de layout en communicatie met de gebruiker regelen -en ook bijvoorbeeld alles vertalen naar de juiste taal en opmaak. Maar ToString() is wèl enorm handig voor debuggen.
+
+4. In moderne versies van C# kan je vaak ook 'records' gebruiken in plaats van klassen; een record definieert een bruikbare ToString().
+
+5. Basistypes zoals int, char, bool en string hebben een goed werkende ToString-methode. Maar klassen die je zelf definieert hebben dat niet: als je die uitprint, krijg je de naam van de klasse, bijvoorbeeld "Phone" of "SimplePerson". Als je dus ooit rare console-output hebt met daarin niet de waarde die je zoekt, maar de naam van een klasse, dan print je waarschijnlijk ergens per ongeluk een klasse zelf in plaats van een property van de klasse.
+
+
 
 <div style="page-break-after: always;"></div>
 
@@ -1118,6 +1264,8 @@ Let wel: het gaat hier niet om dat er een "input-kant" en een "output-kant" is; 
 
 Een klasse die rechtstreeks inputdata omzet in outputdata (bv JSON naar database) moet je dus liefst vermijden! Net zoals een topkok aparte lepels gebruikt voor het vlees en de groente en de aardappels, zo gebruik je als programmeur aparte services voor communicatie met database, XML-files, user interface (al wordt dat laatste wegens de architectuur van C# normaal geen service genoemd, maar een 'entry point' (wegens de main-functie) - al blijft de taak net zo gespecialiseerd: informatie van en naar de gebruiker brengen...
 
+En als je nadenkt zie je in een goed ontwerp overal hexagonale architectuur: je Program-klasse is bijvoorbeeld een eenheid die consoleinput omzet in phones, en phones omzet in console-output... (daarom zou(den) Program en andere 'frontend-klassen') dan ook de enige klassen moeten zijn met Console-methoden als Console.WriteLine enzo...)
+
 Links:   
 - https://en.wikipedia.org/wiki/Hexagonal_architecture_(software)  
 - https://alistair.cockburn.us/hexagonal-architecture/​  
@@ -1125,6 +1273,62 @@ Links:
 
 
 <div style="page-break-after: always;"></div>
+
+## Elke klasse in een aparte file
+
+De regels die C#-programmeurs hebben verschillen per bedrijf; maar bij mijn beste weten gebruiken de meeste groepen de regel dat elke klasse in een aparte file moet staan.
+
+Dit is inderdaad vaak onpraktisch voor kleine projecten. Bij een groot project is het vaak wel handig (anders moet je beslissen of "Phone" bij de "PhoneService" of bij "Program" moet staan). En feitelijk valt de "prijs" wel mee met moderne IDEs, vaak kan je sneller naar de gezochte code met een sneltoets dan door te scrollen...
+
+```
+vuistregel: bij professionele C#-projecten gebruik je normaal 1 file per klasse.
+```
+ 
+Dit kan bij kleine projecten enigszins onpraktisch zijn , maar het doel is dat jullie kunnen gaan werken aan projecten van tienduizenden regels, waarvoor het wèl nuttig is.
+
+## Datatype voor prijzen
+
+Voor prijzen: gebruik decimal. Want meestal heeft een prijs cijfers achter de komma, dus int kan niet. En double telt licht onnauwkeurig op, en accountants houden niet van duizendsten van centen die ineens verdwijnen of verschijnen. _Waarom_ double onnauwkeurig is, is een andere vraag (het heeft te maken dat double in de computer als binair wordt aangegeven, en net als ons tientallig stelsel een oneindig lange rij 3en nodig heeft om 1/3 aan te geven, zo heeft een binair stelsel een oneindig lang getal nodig om 0.95 aan te geven, en getallen in de computer hebben natuurlijk geen oneindige lengte!)
+
+Hoe dan ook: gebruik decimal voor prijzen. Voor 'normale' metingen, zoals lengte enzo, waar afrondingsfouten toch niet relevant zijn wegens de beperkte meetnauwkeurigheid, gebruik double, dat is kleiner en sneller.
+
+
+## Omgaan met nullable
+
+Normaal wil je geen waarschuwingen in je code. Hoe ga je om met alle waarschuwingen van "nullable".
+
+Één mogelijkheid is `<nullable>` in de projectfile (.csproj) op "disable" te zetten.
+
+Mocht je toch nullable willen enablen, dan heb je de volgende opties:
+1) bij een methode die mogelijk null aflevert (zoals Console.ReadLine(), als de gebruiker op Ctrl+Z drukt)
+
+- maak ontvangend type nullable: string? answer = Console.ReadLine();
+	+ voordeel: geen waarschuwing meer
+	+ nadeel: je moet mogelijk verder in het programma alsnog dingen iets complexer maken om de mogelijkheid van null af te vangen.
+	+ nadeel: C# is nogal 'tolerant' voor nulls, je kunt alsnog onnodige logische fouten krijgen zonder crash (bijvoorbeeld null + 5 is perfect legaal C#, dus bijvoorbeeld een `int?` kan problemen veroorzaken).
+	
+- schakel de waarschuwing uit met !: string answer = Console.ReadLine()!;
+	+ voordeel: geen waarschuwing meer
+	+ voordeel: geen extra aanpassingen in de rest van het programma nodig
+	+ voordeel: simpel als je niet verwacht dat je ooit zo'n rare input krijgt of als het niet erg is als het programma soms crasht
+	+ nadeel: als de waarde toch null is, crasht het programma
+	
+- gebruik de null-coalescing operator om een default-waarde te geven: string answer = Console.ReadLine() ?? "0";
+	+ voordeel: geen waarschuwing meer
+	+ voordeel: geen extra aanpassingen in de rest van het programma nodig
+	+ nadeel: op deze plaats iets meer code dan bij de alternatieven
+	+ nadeel: soms is het moeilijk een goede default-waarde te bedenken, en is string? duidelijker.
+	
+Wat de beste methode is hangt af van de situatie. Voor programma's voor privégebruik is '!' het simpelst. Voor 'publieke' programma's is ?? waarschijnlijk het veiligst, alleen te vervangen door ? als je geen goede default-waarde kunt verzinnen.
+
+Voor properties heb je drie alternatieven:
+
+- public string? Name { get; set; } // voordelen en nadelen zoals bij de ?
+
+- public string Name { get; set; } = "onbekend"; // voordelen en nadelen zoals bij de ??
+
+-public string Name { get; set; }
+Person(string name) { Name = name; } // dus een constructor. Wat je liever niet gebruikt voor dataklassen, maar soms is het de beste optie.
 
 # Gebruiksvriendelijkheid
 
@@ -1973,6 +2177,40 @@ Vandaar dat programmeurs het vaak hebben over YAGNI: You Ain't Gonna Need It (Ye
 Hoe dan ook, voor normale softwareontwikkeling is YAGNI nog steeds een van de beste leidprincipes om te volgen.
 
 <div style="page-break-after: always;"></div>
+
+## Namespaces - advies: probeer file-scoped te gebruiken
+
+Optioneel maar wel handig: in .NET 6/C#10 kun je file-scoped namespaces te gebruiken. Dat wil zeggen, in plaats van 
+```
+namespace PhoneShop 
+{
+    class PhoneApp 
+    {
+        public static void Main() 
+        {
+            if // ...
+        }
+    }
+}
+```
+
+krijg je dan iets als 
+
+```
+namespace PhoneShop; 
+
+class PhoneApp 
+{
+    public static void Main() 
+    {
+        if // ...
+    }
+}
+```
+
+Nu weet ik niet of alle C#-programmeurs in bedrijven dit al gebruiken, maar ik kan het zeker aanbevelen: het scheelt een beetje typewerk en maakt het makkelijker om te zien of je ergens een accolade teveel of te weinig hebt gebruikt. (Minder accolades vind ik overigens ook fijn, al kan het zijn dat jij het bovenste voorbeeld prettiger lezen vindt dan het onderste).
+
+Bovendien lijkt het erop dat file-scoped namespaces de toekomst hebben -hoewel C++ nog namespaces had met extra indentatie werd daar al flink over geklaagd (Google had zelfs standaarden dat de indentatie maar 1 karakter moest worden, wat gretig werd overgenomen door mijn C++-programmerende collega). Talen als Java en ongeveer alles wat na Java kwam (_behalve_ C#, mogelijk omdat C# niet teveel op Java wilde lijken) hadden hebben gewoon een declaratie aan het begin van een file inplaats van een extra niveau van identatie. C# begint in dit opzicht eindelijk bij te trekken van een tamelijk onpraktische beslissing van 20 jaar terug. Dus hoewel ik niet weet of nullable-enabled een grote hit zal worden in de .NET community, verwacht ik dat file-scoped namespaces wel door het merendeel van de programmeurs gebruikt zullen worden nu het kan!
 
 ## Pas op voor recursie!
 
