@@ -1274,17 +1274,7 @@ Links:
 
 <div style="page-break-after: always;"></div>
 
-## Elke klasse in een aparte file
 
-De regels die C#-programmeurs hebben verschillen per bedrijf; maar bij mijn beste weten gebruiken de meeste groepen de regel dat elke klasse in een aparte file moet staan.
-
-Dit is inderdaad vaak onpraktisch voor kleine projecten. Bij een groot project is het vaak wel handig (anders moet je beslissen of "Phone" bij de "PhoneService" of bij "Program" moet staan). En feitelijk valt de "prijs" wel mee met moderne IDEs, vaak kan je sneller naar de gezochte code met een sneltoets dan door te scrollen...
-
-```
-vuistregel: bij professionele C#-projecten gebruik je normaal 1 file per klasse.
-```
- 
-Dit kan bij kleine projecten enigszins onpraktisch zijn , maar het doel is dat jullie kunnen gaan werken aan projecten van tienduizenden regels, waarvoor het wèl nuttig is.
 
 ## Datatype voor prijzen
 
@@ -2270,3 +2260,158 @@ public static void Main()
 Wel, we hebben er in elk geval de naam van de beroemde programmeursvragensite "Stack Overflow" aan te danken...
 
 Hoe dan ook, tenzij je een interessant wiskundig probleem aan het oplossen bent (bijvoorbeeld https://www.codewars.com/kata/55cf3b567fc0e02b0b00000b), probeer een for, do of while loop te gebruiken in plaats van recursie. Je medeprogrammeurs zullen je dankbaar zijn voor de extra leesbaarheid, en de gebruikers zullen dankbaar zijn omdat hun applicatie niet onverwachts crasht. 
+
+## Maak variabelen zoveel mogelijk constant of invariant
+
+Het is voor iedere programmeur moeilijk computerprogramma's te maken die geen bugs bevatten. Sowieso heb je de denkfouten en het dingen over het hoofd zien waar je weinig aan kunt doen zonder peer review en testen. Aan het andere uiteinde heb je dingen die goede codeanalyse bij een geschike programmeertaal automatisch kan ontdekken, zoals Visual Studio je erop wijst als je bijvoorbeeld een getal aftrekt van een string - wat JavaScript bijvoorbeeld niet doet. Probeer maar eens in een JavaScript-terminal: "15" - 1 + 1 in te typen (dat levert 15 op), en dan een regel met "15" + 1 - 1, wat resulteert in... wel, dat moet je zelf zien...
+
+Maar tussen imperfecties in het denken en hulp van de taal en/of tools zit een grijs gebied waarop onze programmeerkeuzes de fouten die we maken kunnen verminderen. En een aantal van de technieken die je als programmeur daarvoor gebruikt komen uit het zogenaamde "functioneel programmeren". Nu heeft het functioneel programmeren meerdere sterke (en zwakke) punten, maar één techniek die voor alle programmeurs nuttig is, is het zo weinig mogelijk gebruiken van 'veranderlijke' variabelen: een variabele moet liefst altijd hetzelfde begrip aangeven. Dat is meestal oftewel een constante (string name = "Joe Biden";) of een invariant, iets dat altijd waar blijft al verandert de waarde (int today = "Tuesday"; // morgen is het "Wednesday"). 
+
+Hoe implementeer je die? Constanten zijn doorgaans makkelijk (int quitIndex = 6;), invarianten gebruik je meestal in loops (currentIndex), en buiten loops zet je ze vaak in een methode of property (string nameOfToday = Today().Name;, waarbij Today een methode is die altijd een dag-object met de op dat moment correcte naam teruggeeft)
+
+Maar hoe lossen constanten en invarianten je bugs op? Beschouw twee codevoorbeelden die ik afgelopen week tegenkwam. Let wel: dit zijn geen letterlijke kopieën, mijn geheugen is ook weer niet zo goed. Maar ze illustreren wel het probleem van 'variabele variabelen'. 
+
+Voorbeeld 1a:
+```
+phoneIndex++;
+Console.WriteLine($"{phoneIndex}. Quit");
+
+// boel code 
+
+if (input <= phoneIndex) ShowPhone(input)
+```
+
+Voorbeeld 2a:
+```
+// need to calculate "ultimate digit" in numerological way
+// 0 to 9 stay the same, 11 becomes 1+1=2, 999 becomes 27 becomes 9
+
+int NumerologicalNumber(int n)
+{
+    int y = n;
+    string a = y.ToString();
+    while (a.Length > 1) 
+    {
+       for (int i = 0; i < a.Length; i++) 
+       {
+           y += a[i] - '0';
+       }
+       a = y.ToString();
+    }
+	return y;
+}
+```
+
+In beide stukken code is er een bug (die kennelijk niet makkelijk te ontdekken was). Maar er zijn wel variabele variabelen! Laten we die eens aanpakken.
+
+Voorbeeld 1b:
+```
+int quitIndex = phoneIndex + 1;
+Console.WriteLine($"{quitIndex}. Quit");
+
+// boel code 
+
+if (input <= phoneIndex) ShowPhone(input)
+```
+
+Voorbeeld 2b:
+```
+// need to calculate "ultimate digit" in numerological way
+// 0 to 9 stay the same, 11 becomes 1+1=2, 999 becomes 27 becomes 9
+
+int NumerologicalNumber(int n)
+{
+    int y = n;
+    string a = y.ToString();
+    while (a.Length > 1) 
+    {
+       y = a.Sum(c => c - '0');
+       a = y.ToString();
+    }
+	return y;
+}
+```
+
+Je ziet dat de bugs op 'mysterieuze wijze' verdwenen zijn!
+
+Uiteraard worden niet _alle_ bugs voorkomen door variabelen altijd constant of invariant te maken, maar het is een redelijk makkelijke techniek die je veel hoofdpijn kan besparen!
+
+Als je merkt dat je het moeilijk vindt om code te schrijven waarbij variabelen constant of invariant zijn: dat kan ik me voorstellen, talen als Java en C# hebben daar geen ontzettend goede support voor (al kan je wel dingen doen met const en ReadOnlyList etc., maar dan zullen veel mensen je C#-code raar vinden). Oefenen met invarianten/constanten is handiger met een functionele of recenter ontworpen taal, die hebben betere support voor 'onveranderlijkheid', zeker als ze een goede editor hebben die je erop wijst dat je iets constant kunt maken. Mijn persoonlijke aanbeveling als je wilt oefenen met constante en invariante variabelen zou de programmeertaal Kotlin zijn, de taal lijkt nog enigszins op C# (in elk geval meer dan Haskell dat doet) en er is een heel goede editor voor (IDEA, van JetBrains, die ook de C#-analysetool Resharper maakt). Voor meer informatie, zie https://www.w3schools.com/kotlin/index.php. Rust, Swift, Haskell, Elm of F# zouden ook kunnen, maar die hebben vaak slechtere editors en/of lijken minder op C#.
+
+## "Nullers" versus "throwers" versus "listers"
+
+Bij bepaalde methodes-in het bijzonder functies die informatie moeten teruggeven, kan de methode falen. Een veelvoorkomend scenario is dat iemand informatie zoekt, die niet gevonden kan worden. Hoe ga je daarmee om?
+
+De eerste vraag is wat voor soort output de methode geacht wordt te geven. Als je een collectie/lijst teruggeeft, zoals zoekresultaten van Google of Bol.com of Amazon, is het het beste een lege lijst terug te geven als niets gevonden is. Ja, sommige programmeurs geven in dat geval null terug, maar dat is niet echt 'best practice'. Zie bijvoorbeeld "Effective Java, Third Edition", Item 54 "Return empty collections or arrays, not nulls". 
+
+De reden om een lege collectie terug te geven in plaats van `null` zijn tweevoudig. Technisch zorgt een null teruggeven dat code die de methode aanroept altijd voor null moet checken (wat je als programmeur weleens vergeet). En vanuit een domain-driven-design/logisch perspectief is het ook niet juist: je kunt misschien een lijst van 10,427 personen vinden die Bas heten, de lijst van mensen die Bas heten en een poedel hebben is misschien 30, maar mensen die Bas heten, een poedel hebben, en die ook nog professioneel pianist zijn (Bas of de poedel) is waarschijnlijk nul. En 0 is net als 1, 30 of 10,427 een getal, wat je nooit zou weergeven met een apart niet-getal-type als `null`.
+
+De "listers" zijn dus gemakkelijk. Maar wat als je een enkele waarde wilt teruggeven? Een lijst die alleen 1 waarde of 0 waarden kan hebben is raar: als een methode een lijst teruggeeft suggereert dat dat een aanroep naar die methode 0 tot (bijna) oneindig veel waarden kan returnen, dat is immers het 'lijst-contract'. Dan moet je dus iets anders verzinnen.
+
+Welke oplossing je kiest hangt doorgaans af van de omstandigheden. Mocht je als programma van tevoren weten welke keuzes juist zijn, en de gebruiker kunnen beperken die keuzes op te geven, dan is het het beste een exceptie te gooien als het item niet gevonden wordt-dan is het een programmeerfout, die je het beste zo snel mogelijk kunt ontdekken, liefst voordat je software in produktie gaat. Gelukkig hoef je als programmeur dan lang niet altijd zelf een exceptie te gooien, vaak gebeurt dat al automatisch als je bepaalde LINQ-commando's aanroept, zoals Single() of First().
+
+In het geval dat je niet de hele database in het geheugen kunt laden en/of de gebruiker heel rare waarden kan doorgeven (bijvoorbeeld bij een webapplicatie) is het meestal beter een null terug te geven en dat in de rest van het programma af te handelen. Dat is meestal wat meer werk, maar dan reserveer je de exceptie voor een echt uitzonderlijk geval; dingen die normaal kunnen gebeuren handel je normaal _niet_ met excepties af, want bijvoorbeeld een gebruiker die een typefout maakt is niet echt uitzonderlijk.
+
+Een paar voorbeelden:
+```
+enum Race { Invalid, Dwarf, Elf, Hobbit, Human, Orc, Wizard };
+
+class Character
+{
+    public string Name { get; set; }
+    
+    public Race Race { get; set; }
+}
+
+List<Character> fellowShip = new() { 
+   new() { Name = "Frodo", Race = Race.Hobbit },
+   new() { Name = "Gimli", Race = Race.Dwarf },
+   new() { Name = "Legolas", Race = Race.Elf },
+   new() { Name = "Aragorn", Race = Race.Human },
+   new() { Name = "Gandalf", Race = Race.Wizard },
+   new() { Name = "Samwise", Race = Race.Hobbit },
+   new() { Name = "Merry", Race = Race.Hobbit },
+   new() { Name = "Pippin", Race = Race.Hobbit },
+   new() { Name = "Boromir", Race = Race.Human },
+};
+
+// 'lister'
+IEnumerable<string> AllFromRace(Race race) =>
+    fellowShip.Where( c => c.Race == race ).Select(c => c.Name);
+    
+Console.WriteLine(AllFromRace(Race.Dwarf)); // 1 karakter, Gimli
+Console.WriteLine(AllFromRace(Race.Human)); // 2 karakters, Aragorn en Boromir
+Console.WriteLine(AllFromRace(Race.Orc)); // 0 karakters, lege lijst 
+
+// 'nuller': bijvoorbeeld voor algemeen zoeken: is er een...
+string? FirstMemberWhoseNameStartsWith(char ch) =>
+    fellowShip.FirstOrDefault(c => c.Name[0] == char.ToUpper(ch))?.Name;
+    
+Console.WriteLine(FirstMemberWhoseNameStartsWith('A')); // Aragorn
+Console.WriteLine(FirstMemberWhoseNameStartsWith('G')); // Gimli (Gandalf komt later)
+Console.WriteLine(FirstMemberWhoseNameStartsWith('T')); // null. Nobody's name starts with T...
+
+// 'thrower'; bijvoorbeeld bij een winforms-app waar alleen de 'A', 'B'
+// 'F', 'G', 'L', 'M', P' en 'S' worden getoond. Dan is een andere letter
+// een bug! (ik heb de signature ook aangepast naar string om 
+// dat te communiceren)
+string GetFirstMemberWhoseNameStartsWith(char ch) =>
+    fellowShip.First(c => c.Name[0] == ch).Name;
+    
+Console.WriteLine(GetFirstMemberWhoseNameStartsWith('A')); // Aragorn
+Console.WriteLine(GetFirstMemberWhoseNameStartsWith('G')); // Gimli (Gandalf komt later)
+Console.WriteLine(GetFirstMemberWhoseNameStartsWith('T')); // throws   
+    // InvalidOperationException. Nobody's name starts with T...
+``` 
+
+## Elke klasse in een aparte file
+
+De regels die C#-programmeurs hebben verschillen per bedrijf; maar bij mijn beste weten gebruiken de meeste groepen de regel dat elke klasse in een aparte file moet staan.
+
+Dit is inderdaad vaak onpraktisch voor kleine projecten. Bij een groot project is het vaak wel handig (anders moet je beslissen of "Phone" bij de "PhoneService" of bij "Program" moet staan). En feitelijk valt de "prijs" wel mee met moderne IDEs, vaak kan je sneller naar de gezochte code met een sneltoets dan door te scrollen...
+
+```
+vuistregel: bij professionele C#-projecten gebruik je normaal 1 file per klasse.
+```
+ 
+Dit kan bij kleine projecten enigszins onpraktisch zijn , maar het doel is dat jullie kunnen gaan werken aan projecten van tienduizenden regels, waarvoor het wèl nuttig is.
