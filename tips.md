@@ -507,6 +507,265 @@ Console.WriteLine(lastInAlphabet2);
 
 <div style="page-break-after: always;"></div>
 
+## C# enums
+
+C# heeft een aantal bijzondere datastructuren, één ervan heet de `enum`. Een enum is een soort vermomd geheel getal met een leesbare naam die (iets) meer veiligheid biedt dan een integer-constante. Je definieert ze als volgt:
+
+```
+enum Weekday { WeekdayNotSet, Monday, Tuesday, Wednesday, 
+	Thursday, Friday, Saturday, Sunday };
+
+enum Direction { DirectionNotSet, North, South, East, West };
+```
+
+Let op: de eerste waarde van een enum hoeft niet iets te zijn als 'WeekdayNotSet', en ik zal deze in de volgende voorbeelden ook weglaten voor de compactheid. Maar in produktiecode is een EnumNameNotSet (of EnumNameError of EnumNameBug of iets dergelijks) wèl erg handig, zoals ik later zal uitleggen. 
+
+Waarom gebruik je enums? Wel, omdat je anders vaak getallen met min of meer onduidelijke betekenissen moet teruggeven, zoals 0 bij succes, -1 als een file niet gevonden is, -2 als de gebruiker het programma onderbrak, of iets anders. Dan krijg je iets als 
+
+```
+int DoSomething(string fileName)
+{
+   // if file not found
+   return -1;
+   
+   // if user interrupts process
+   return -2; 
+   
+   // successful completion
+   return 0;
+}
+```
+
+Dit heeft meerdere nadelen. Allereerst houden programmeurs niet altijd van 
+documentatie schrijven, dus vaak krijg je dan iets als 
+```
+int DoSomething(string fileName)
+{
+   // <some code>
+   return -1;
+   
+   // <more code>
+   return -2; 
+   
+   // <even more code>
+   return 0;
+}
+```
+
+Dan is het voor iemand die de code moet onderhouden en debuggen nogal een gezwoeg om te begrijpen wat het programma doet.
+
+Maar ook op de plek waar de waarde wordt gebruikt is het lastig.
+```
+if (DoSomething("test.tmp") == -1) 
+{
+   // code
+}
+```
+
+Je kunt je mogelijk voorstellen dat een programmeur zich gaat afvragen wat die -1 nou betekent.
+
+Met enums wordt het een stuk duidelijker:
+
+```
+enum Result { Success, FileNotFound, CancelledByUser };
+
+int DoSomething(string fileName)
+{
+   // <some code>
+   return Result.FileNotFound;
+   
+   // <more code>
+   return Result.CancelledByUser; 
+   
+   // <even more code>
+   return Result.Success;
+}
+
+// ...
+
+if (DoSomething("test.tmp") == Result.FileNotFound) 
+{
+   // code
+}
+```
+
+De meest voor de handliggende toepassing van enums is de vervanging van integers door enum-constanten. Maar je kunt ook strings vervangen door enums. Iets als Result.Success voorkomt de problemen van spelfouten als in `return "succes"`. En daarnaast is het automatisch hernoemen makkelijker. 
+
+En enums zijn vaak zelfs handig in plaats van booleans. Mogelijk heb je weleens methoden gezien als `Console.ReadKey(true)`, waarin je in de documentatie moest duiken om te zien wat `true` en `false` hier betekenden. Voor de lezer van code was het veel makkelijker geweest als de ontwerpers van C# hadden gekozen voor iets als Console.ReadKey(Mode.DisplayChar) versus Console.ReadKey(Mode.HideChar).
+
+Ook zijn enums veiliger te gebruiken in switch statements en expressies, omdat ze beperkt zijn in hun waarden. Tenslotte kan je dan ook rekenlogica gebruiken; je kan dan bijvoorbeeld iets doen als
+
+```
+enum Weekday { Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday };
+
+Weekday today = Weekday.Wednesday;
+Console.WriteLine("How many days from now?");
+int numDays = int.Parse(Console.ReadLine());
+Weekday futureDay = (Weekday)(((int)today + numDays) % 7);
+Console.WriteLine(futureDay);
+```
+
+Enums hebben ook het voordeel van een 'natuurlijke ordening'. Als je boodschappen wilt loggen met een minimum niveau aan belangrijkheid, kun je dat doen met de volgende code. Maar alles waar een 'natuurlijke volgorde' in zit kan profiteren van een enum.
+
+```
+enum LogLevel { Debug, Info, Warning, Error, Fatal };
+
+// ... andere code
+LogLevel _minLevel = LogLevel.Debug;
+
+void SetMinLevelForLogging(LogLevel level) => _minLevel = level;
+
+void Log(LogLevel level, string message)
+{
+   if (level >= _minLevel) // log
+}
+```
+Tenslotte is het bij programmeren het beste om iets weer te geven in het 'meest beperkte type dat van toepassing is'; dus als je drie waarden hebt (zeg: mannelijk, vrouwelijk, onzijdig) dan zijn integers met hun 4 miljard waarden en strings met hun ongeveer oneindige hoeveelheid mogelijke waarden minder elegant/verstandig dan een enum met drie waarden. Ook omdat compilers dan beter kunnen checken als je ergens een denkfout of typefout maakt.
+
+Wel zijn er een paar dingen om te onthouden over enums:
+
+### Enum-tip 1: Je kunt C#-enums _erg_ ingewikkeld maken; in de meeste gevallen is dat echter een slecht idee
+Je kunt een enum wijzigen met de modifier `[Flags]`, je kunt het basistype van een enum instellen op een ander type zoals long of byte met bijvoorbeeld enum MyEnum : byte { ... }, je kunt de enum-waarden linken met willekeurige integers, zoals North = 3, South = 17 ... Je kunt enums ook casten van en naar nummers (bijvoorbeeld (int)Weekday.Tuesday, maar ook (Weekday)40 ! C#'s enums hebben kort gezegd heel veel mogelijkheden en nauwelijks veiligheidsgordels, dus tenzij het ècht noodzakelijk is (en vraag het voor de zekerheid ook aan een collega): hou enums gewoon zo simpel mogelijk, dat voorkomt heel veel bugs!
+
+### Enum-tip 2: Geef de eerste ('0')-waarde van een enum een waarde waaraan je ziet dat de enum niet geïnitialiseerd is
+In C# wordt een enum altijd standaard op 0 gezet als je vergeet hem in te stellen op een bepaalde waarde, dus in code als
+
+```
+internal enum Weekday { Monday, Tuesday, Wednesday, 
+    Thursday, Friday, Saturday, Sunday };
+
+class Calendar
+{
+    Weekday today;
+    
+    public void Display()
+    {
+        Weekday otherDay = new Weekday();
+        Console.WriteLine($"Today is {today}, our appointment is on {otherDay}");
+    }
+}
+```
+
+worden beide dagen op maandag gezet. En dat is waarschijnlijk niet wat je wilt! Je wilt altijd een correcte waarde hebben, òf een waarschuwing dat je programma een bug bevat. Definieer Weekday daarom liever als 
+```
+internal enum Weekday { WeekdayNotSet, Monday, Tuesday, Wednesday, 
+    Thursday, Friday, Saturday, Sunday };
+```
+
+en je hebt het gelijk door als je je code moet verbeteren!
+
+## Waarop Unit-test je?
+
+
+### De doelen van unit-testen
+
+Unit-tests hebben normaal één of meer van vier doelen: 
+
+1. zorgen dat je complexe algoritmes goed programmeert
+2. als hulpmiddel bij het oplossen van bugs
+3. voorkomen dat functionaliteit kapot gaat als je code debugt of refactort of features toevoegt.
+4. sommige soorten leidinggevenden die iets gehoord hebben over 'minimaal 80% code coverage' tevreden houden
+
+Een voorbeeld van 1) (complexe algoritmes goed programmeren) was dat de makers van de browser Netscape een boel unit-tests schreven met alle mogelijke e-mail-headers, want daar zijn nogal veel verschillende varianten van, en die moesten allemaal correct geïnterpreteerd worden. Weinig programmeurs willen na elke codewijziging met de hand controleren dat alle 74 headerformaten nog steeds correct geïnterpreteerd worden, en verstandige programmeurs weten dat zij daar als mensen ook makkelijk fouten bij maken. Unittests zijn daar echter ideaal voor!
+
+Categorie 2: het oplossen van bugs. Soms maak je unit-tests als je aan een relatief ingewikkeld algoritme aan het schrijven bent en je merkt dat bepaalde gevallen misgaan. Dan zijn unit-testen een complement aan de "categorie-1"-unit-testen die maakt vóórdat je gaat programmeren. Dus handig als je de complexiteit van een probleem blijkt te hebben onderschat-wat iedereen weleens gebeurt. Het tweede scenario is als een bug niet ontdekt wordt door de compiler of jouzelf of de peer-reviewer, maar pas in produktie. Of als de bug niet 1-2-3 te begrijpen of op te lossen is. Een unit-test maken leert je sneller of de bug is opgelost dan telkens het programma met de hand runnen, en beveiligt er hopelijk ook tegen dat een toekomstige bugfix, refactoring of nieuwe feature de bestaande code 'breekt'. 
+
+Categorie 3 - voorkomen dat functionaliteit kapot gaat- is iets dat je normaal beslist per project, afhankelijk van hoeveel er aan het produkt gewerkt wordt, hoe kritisch/belangrijk het is, en hoe vaak features breken. Voor een programma dat alleen jijzelf maakt en gebruikt waarbij je af en toe een feature toevoegt zijn unit-tests tegen 'breken' vaak niet de moeite waard. Bij software voor banken of pacemakers, waar miljarden en/of mensenlevens op het spel staan, geldt uiteraard '_better safe than sorry_' en moet je de code goed dichttimmeren met goede unittests. Maar de meeste dingen die je maakt zitten ergens tussen die twee extremen in.
+
+Categorie 4: eis van management. Dit is een moeilijke - veel managers houden van statistieken, om wat voor redenen dan ook. Het is overigens (bij relatief hoge vereisten van kwaliteit) niet slecht om 80% of meer 'code coverage' aan te houden, als management het die prijs waard vindt (als programmeur kun je vaak moeilijker de afweging maken van de kosten versus de waarde van extra kwaliteit voor de organisatie of voor klanten). Wel is belangrijk te beseffen dat '80% code coverage' op zich niets zegt: je kunt 80% code coverage halen door royaal gebruik te maken van `[ExcludeFromCodeCoverage]` of door geen asserts te gebruiken in je testmethodes, of zelfs met 'goedbedoelde' tests die zo zwak zijn dat ze fouten niet opmerken, zoals testen dat GetPhone(1) een Phone-object teruggeeft! En waardeloze testen zijn erger dan het niet hebben van testen, want ze kosten tijd om te schrijven, te doorzoeken, te runnen, en aan te passen. Een interessant praatje over de 'politiek' van unit testen is dat van Roy Osherove: [Lies, Damned Lies, and Metrics • Roy Osherove • GOTO 2019](https://www.youtube.com/watch?v=goihWvyqRow).
+
+### Als je echt goed in unit-testen wilt worden
+
+Drie dingen om te onthouden:
+
+- Unit-testen is vaak niet het leukste onderdeel van je werk, maar als je een echt uitmuntende programmeur wilt worden is ontzettend goede unit-testen kunnen schrijven één van de pilaren daarvan.
+
+- Een echt goede programmeur ziet testen niet als een dogma om de '80% code coverage' te halen, maar als een hulpmiddel bij het programmeren, waarbij de baten van de unit-test ideaal groter moeten zijn dan de kosten (het schrijven, lezen, onderhouden, en de runtime van de unit-tests).
+
+- Goed unit testen is niet makkelijk! Met een handleiding Moq doorlezen ben je er niet. Je wordt pas een goede unit-tester door:
+  - anderen om feedback op jouw tests te vragen
+  - kritisch de tests van anderen te bekijken
+  - een brede test-toolkit te leren beheersen die verder kijkt dan 'unit testen', en bijvoorbeeld ook integratietesten, end-to-end testen en BDD testen bevat
+  - met andere programmeurs praten over unittesten
+  - leren (via boeken en presentaties) van de grote unittest-experts. Ik ben zelf een grote fan van Khorikov's "Unit Testing Principles, Practices, and Patterns". En Roy Osherove heeft ook vaak interessante gedachten om te melden, bijvoorbeeld op [The Art of Unit Testing • Roy Osherove & Dave Farley • GOTO 2021](https://www.youtube.com/watch?v=6ndAWzc2F-I).
+
+
+### Hoe test je nou (over wat je precies test, niet de test-naming-guidelines van je team enzo)
+
+Als je wilt testen, doe je dat normaal op basis van kosten/baten: maak liever de test met de meeste waarde voor de minste inspanning en onderhoudskosten, testen die een relatief lage kans hebben op 'false positives' (de code doet het, maar de tests breken), en ook een relatief lage kans hebben op 'false negatives' (de feature werkt niet meer, maar de test doet alsof alles nog in orde is!)
+
+Over het algemeen is testen op returnwaarde het beste. Als dat niet lukt: probeer op 'state' te testen. Als je noch op returnwaarde noch op state kan testen, kan je nog steeds unittesten - op communicatie-, maar doe dat echt alleen als er geen betere alternatieven zijn, want communicatie-testen hebben een relatief grote kans op false positives en false negatives, meer dan de alternatieven. En het schrijven ervan kost overigens ook meer tijd, dus ze hebben ook nog hogere kosten! 
+
+De drie methoden naast elkaar gezet:
+
+1) testen op returnwaarde: als de te testen methode een returnwaarde heeft, test daarop. Bij Phone GetPhoneById(int id) is de meest logische test of het juiste Phone-object wordt gereturnd.
+
+2) testen op state: het testen van de (nieuwe) waarden van de publieke properties of fields van een klasse. In de praktijk doe je zoiets als de te testen methode void teruggeeft, maar het object wèl is veranderd. Maar als je via een andere (publieke) methode kan zien dat de state van het object veranderd is, kan je die methode gebruiken om te checken of void-methode werkt.
+
+Contrasteer:
+```
+// return-waarde test
+// te testen methode: Plate GetContentsOfPlate()
+
+[Fact]
+void GetContentsOfPlate_Should_ReturnContentsOfPlate()
+{
+    // arrange
+	Plate plate = new Plate("fries");
+	
+	// act 
+	List<string> contents = plate.GetContentsOfPlate();
+	
+	// assert 
+	Assert.Equal(1, contents.Length);
+	Assert.Equal("fries", contents[0]);
+}
+
+// state-test 
+// te testen methode: void AddToPlate(string foodName)
+
+[Fact]
+void AddToPlate_Should_AddFoodstuffToEmptyPlate()
+{
+    // arrange
+	Plate plate = new Plate();
+	
+	// act 
+	plate.AddToPlate("ketchup");
+	
+	// assert : let erop dat dit alleen betrouwbaar is als GetContentsOfPlate() al goed getest is
+	// let er ook op dat GetContentsOfPlate nu niet in de act-sectie zit, maar in feite een 
+	// helperfunctie is van de assert-sectie
+	List<string> contents = plate.GetContentsOfPlate();
+	Assert.Equal(1, contents.Length);
+	Assert.Equal("ketchup", contents[0]);
+}
+```
+
+3) testen op communicatie. Vaak kan je niet testen op returnwaarde of state. Bijvoorbeeld omdat de state in een database wordt opgeslagen, en de database in je unittests gemockt wordt. Hoe moet je een methode dan unittesten? 
+
+Één antwoord is dat je dan vaak een integratie-test schrijft of een in-memory database gebruikt, zodat je dan wèl state-testen kunt schrijven. Maar voor het vervolg zal ik aannemen dat je mogelijk nog niet geleerd hebt integratie-testen te schrijven of dat het team waarin je werkt integratietesten onacceptabel traag (of te moeilijk) vindt maar wèl 80% code coverage wil halen. Er zijn overigens ook situaties waarin integratie-testen niet werken en je wel op communicatie _moet_ testen; daar later meer over.
+
+Hoe dan ook, bij een communicatietest test je of de (belangrijke) methoden die de te testen methode aanroept worden aangeroepen als de juiste voorwaarden gelden. En dat ze niet worden aangeroepen als de juiste voorwaarden _niet_ gelden.
+
+Communicatie wordt (zoals je mogelijk weet) getest met bibliotheken als Moq, met Mock-objects, en Setup en Verify-methoden, wat op zich niet erg moeilijk is als je de 'trucjes' kent. Wel vraag je je misschien af waarom het testen van de communicatie een lagere prioriteit heeft dan return-waarde of state-tests.
+
+Returnwaardetests, zoals je hebt kunnen zien, zijn simpeler goed te krijgen dan state-tests, die normaal minstens twee methoden moeten aanroepen om één methode te testen. Communicatietests hebben doorgaans nog meer code nodig dan state-tests, maar dat is niet hun enige probleem. 
+
+Complexe logica kun je meestal uitstekend testen met simpele return-tests, heel soms is misschien een state-test nodig. Diezelfde return- en state-tests werken ook uitmuntend tegen regressiefouten.
+
+Echter, als je code wijzigt ga je vaak methodennamen veranderen of naar andere methoden verwijzen of de logica in een methode aanpassen. Communicatietesten breken niet als je een fout maakt in de logica van een aangeroepen methode (ze checken alleen _dat_ de methode wordt aangeroepen), maar wel als je bijvoorbeeld een methodennaam verandert. Communicatietesten zorgen dus voor heel veel 'false positives' (valse alarmen) en 'false negatives' (onontdekte fouten). De kosten van een communicatie-unittest zijn daarom vaak groter dan de waarde, of tenminste veel groter dan de kosten van return-waarde- en state-testen. 
+
+Zijn communicatietesten dan "nutteloos"? Dat niet. Er zijn omstandigheden waarin je communicatietesten wel _moet_ toepassen. Bijvoorbeeld als je communiceert met een externe API, dat je bijvoorbeeld checkt dat de zoekstring die je naar Google Maps stuurt correct is. En zo zijn er vast meer situaties waarin een communicatietest de enige optie is. 
+
+Mijn persoonlijke indruk is dat communicatietesten (te) vaak worden gebruikt in situaties waar programmeurs oftewel niet weten hoe ze integratietests moeten maken, of geen tijd krijgen om ze te maken, of (soms) dogmatisch integratietests weren. Er zijn altijd mensen die het fijn vinden om één uniforme, simpele manier te hebben om alle problemen mee aan te pakken, of dat nou de 'beste' programmeertaal is of een simpel unit-testrecept. En het 'unit-testen is het testen van 1 methode' (de zogenaamde "London school" van unittesten) is inderdaad een methode die relatief simpel te leren en toe te passen is - het is alleen vaak niet de beste methode om te unittesten.
+
+Echter, als programmeur wil je liever niet in 'heilige oorlogen' belanden met je team. Leer gewoon zelf zoveel mogelijk over unittesten! Mogelijk zijn de testen die je team maakt al goed genoeg voor het produkt waar je aan werkt. En mocht je team in de problemen komen door slechte unittesten, dan zal bijna iedereen behalve de eventuele 'teamidioot' ontvankelijk zijn voor een demo waarin je demonstreert hoe het beter zou kunnen.
+
+Hou communicatietesten dus sowieso in je toolkit (soms zijn ze handig), maar leer liefst ook wat over integratie- en andere testen...   
+
+<div style="page-break-after: always;"></div>
+
 # Debuggen
 
 <div style="page-break-after: always;"></div>
@@ -594,6 +853,26 @@ Bij veel C# enterprise-projecten is de structuur tamelijk simpel. Er zijn drie s
 2) de service-laag. "all intelligence, barely any knowledge". Service-objecten worden gebruikt door de User-interface-laag om data op te halen en weg te schrijven. Ze slaan (normaal) zelf geen data op, hebben hoogstens een link naar een database. Bij veel C#-projecten zit alle logica van een app (waaraan moet een geldig object voldoen) in de servicelaag. De klassen in de service-laag hebben normaal _wel_ een interface, mede omdat ze dan makkelijk vervangen kunnen worden (van InMemoryPhoneService naar DatabasePhoneService naar WebScrapingPhoneService die allemaal IPhoneService kunnen implementeren).
 
 3) de data-laag. In Enterprise-C# bevat de datalaag doorgaans "domme" objecten. "All knowledge, no intelligence". Meestal alleen simpele properties met { get; set; }. Deze dataklassen hebben geen interface, omdat ze geen gedrag en logica hebben buiten het simpelweg opslaan en ophalen van data.
+
+<div style="page-break-after: always;"></div>
+
+## Circulaire dependencies en interfaces
+
+Je hebt mogelijk gemerkt dat je allerlei problemen kreeg als je de DatabaseLogger in het Logger-project liet verwijzen naar de IRepository in het Business-project, en de PhoneService in het Business-project verwees naar de DatabaseLogger (of ILogger), als die in het Logger-project zaten.
+
+Dat komt omdat C# (net als bijvoorbeeld Java) probeert een boom op te zetten van dingen die eerst gecompileerd moeten worden voor de rest gecompileerd kan worden. C# kijkt dus naar je solution en ziet: Oh, om Winforms te compileren moet ik eerst de Business compileren, en om de Business te kunnen compileren moet ik eerst het Logger-project compileren want daar zit de ILogger in. Dan gaat de compiler naar het Logger-project, en ziet dat om DAT te compileren hij eerst het _Business_-project moet compileren, want daar is de Repository`<T>` in gedefinieerd. Zoals je mogelijk begrijpt, geeft de C#-compiler dan op, met een 'circular dependency'-foutmelding, omdat jij valsspeelt.
+
+Hoe los je dat probleem op?
+
+Zoals je nu mogelijk beseft is één reden om alle interfaces in het domein-project te plaatsen en overal dependency-injection te doen op basis van interfaces een slimme (of tenminste gekluns-bestendige) methode om alles goed te laten gaan. Dus hoe goed (of hoe slecht) je architectuur ook is: als je ergens één of meer domeinprojecten hebt waar al je interfaces in zijn gedefinieerd, en overal dependency-injection gebruikt - of tenminste op de plaatsen waar je anders circulaire dependencies zou krijgen - is het probleem met circulaire dependencies eenvoudig opgelost.
+
+Maar wat als je wat kritischer bent, en voelt dat een project met een goede architectuur geen centrale berg met onverwante interfaces nodig zou moeten hebben? Immers, een helder design heeft meer voordelen dan het niet hebben van circulaire dependencies.
+
+In dit geval zou je normaal aparte databases gebruiken voor logging en voor de phones; mogelijk zelfs een ander type database omdat logging niet het complexe netwerk van relaties heeft dat normale data wel heeft, en omdat hoeveel je ernaar schrijft en ervan leest ook erg anders is dan bij de Phones en Brands-tabellen.
+
+In dit geval zou ik waarschijnlijk een configsettings maken met aparte connectionstrings voor de Phone-database en voor de logging-database; het logging-project zou zijn eigen repository gebruiken en niet meer afhankelijk zijn van het Repository in de PhoneShop.Business, wat de cyclus ook zou verbreken.
+
+Betekent dat dat een goede programmeur nooit een Domain-project met interfaces-folder nodig heeft? Wel, zeg nooit nooit; er zijn ingewikkelde projecten en veel gevallen waarin je met goede redenen afhankelijk wilt zijn van interfaces en niet van implementaties. Persoonlijk zou ik proberen de logische structuur van het project zo helder mogelijk te krijgen en files die sterk gerelateerd zijn (zoals IPhoneService en PhoneService) in hetzelfde project te zetten, en aparte "interface"-projecten alleen gebruiken in noodgevallen. Maar er zullen ongetwijfeld C#-teams zijn die 'interface-projecten' gebruiken en er geen grote problemen mee hebben, en waarbij 'nettere code' zich waarschijnlijk niet terugbetaalt ten opzichte van de tijdsinvestering die ervoor nodig is. Kortom: weet dat een apart 'interface-project' bijna nooit nodig is, maar wees tolerant voor teams die het door historische beslissingen toch gebruiken of nodig hebben, en wees bereid de 'interface-verplaatsing' uit te voeren als dat echt nodig is - maar uiteraard liefst in overleg met de architect!
 
 <div style="page-break-after: always;"></div>
 
@@ -1692,6 +1971,60 @@ Hoe complex mag een methode zijn? Volgens Visser (https://www.softwareimprovemen
 Dit heeft overigens ook praktische redenen als je unittests schrijft: bij elk punt extra complexiteit moet je 2x zoveel tests maken (totaal 2^(complexiteit - 1)); bij de CanEnterForFree moet je 2^(3-1) = 4 tests maken (persoon is Vip, persoon heeft uitnodiging, persoon s geen VIP, persoon heeft geen speciale uitnodiging).
 
 Dat zou betekenen dat je voor een methode met een complexiteit van 11 1024 tests zou moeten maken - die methode opsplitsen in 3 methoden met complexiteiten 4, 5 en 5 (complexiteit 11 = 10 toegevoegde complexiteit, over drie methodes wordt dat 1+3, 1+4 en 1+4)zou het aantal tests terugbrengen tot 8 + 16 + 16 = 40, wat veel werk scheelt!
+
+<div style="page-break-after: always;"></div>
+
+### Command-Query Separation
+
+Een handig programmeerprincipe voor het maken van onderhoudbare code is het onderscheiden van commando's van queries: methoden zijn dan òf een commando, dat de 'staat van de wereld verandert' maar geen waarde teruggeeft, òf een query, die de staat van de wereld niet verandert, maar wel een waarde teruggeeft.
+
+Een voorbeeld van een command is `Console.WriteLine("Hallo");`: het geeft geen waarde terug, maar het verandert wel iets aan 'de staat van de wereld' (het schrijft tekst naar de console - de tekst op de console verandert).
+
+Een voorbeeld van een query is `Math.round(3.141592, 2);`: het verandert niets aan de wereld of de waarde van 3.141592, maar geeft alleen een nieuwe waarde terug, namelijk 3.14.
+
+Dat klinkt allemaal logisch, maar wat heb je nou aan die theorie? Wel, veel mensen maken methoden die zowel een waarde teruggeven àls de waarde van de wereld (bijvoorbeeld een input-parameter) veranderen. Maar dat leidt over het algemeen tot code die relatief moeilijk te begrijpen, te debuggen en te onderhouden is.
+
+Vergelijk bijvoorbeeld 
+```
+bool isNumber = int.TryParse(userInput, out int number);
+```
+
+Met een hypothetische methode als de volgende
+```
+int? number = int.ParseOrNull(userInput);
+```
+
+Welke is het gemakkelijkst te begrijpen? Welke is het makkelijkst foutloos te gebruiken? De meeste mensen zouden zeggen dat de tweede dat is. Want bij de eerste kan je bijvoorbeeld vergeten de returnwaarde te controleren:
+```
+int.TryParse(userInput, out int number);
+Console.WriteLine($"Jouw geluksgetal is {number}!");
+```
+
+Dat gaat goed totdat iemand "zes" invult, en "Jouw geluksgetal is 0!" wordt uitgeprint.
+
+Het relatief lastig te begrijpen en gebruiken zijn van TryParse ligt, als je het gaat analyseren, niet alleen aan de 'rare' `out`-parameter, maar ook aan het feit dat het zowel een command als een query is: het geeft een waarde terug (een boolean), _en_ het 'verandert de wereld', namelijk de waarde van de variabele 'number'.
+
+De (in C# hypothetische) methode ParseOrNull is echter een 'pure' query, dus veel makkelijker te begrijpen. Voor de oplettende lezer die zich afvraagt waarom C# dan-in tegenstelling tot andere talen-geen ParseOrNull heeft: de ontwerpers van C# hebben ooit besloten om null een legale waarde te maken in berekeningen (mogelijk omdat SQL ook zo werkt), wat betekent dat als number null is er geen compiler-error is als je number * 2 or number < 6 of currentTotal += number doet, de berekening levert alleen altijd null op. Of false bij een vergelijking als `number < 6`. Dat gedrag is, zoals je je mogelijk kan voorstellen, nogal lastig te debuggen, vermoedelijk heeft C# daarom geen ParseOrNull, zelfs al lijkt dat op het eerste gezicht mogelijk een goed idee.
+
+Hoe dan ook, het kan helpen de command-query separation ook in jouw eigen code toe te passen. In de meeste gevallen moet een methode òf een commando zijn (void returnen en iets veranderen, of dat nou een waarde is of een database of de inhoud van een scherm) òf een query zijn (dat alleen een waarde teruggeeft). Andere mensen kunnen jouw code dan ook makkelijker lezen en debuggen. En belangrijker - jij kan ook jouw code dan makkelijker begrijpen, aanpassen en debuggen, zelfs maanden na het schrijven ervan!
+
+Een kritische lezer vraagt zich wellicht af of er ook gevallen zijn waarin de command-query separation opgeofferd moet worden aan een 'hoger doel'. Dan gaat het uiteraard vooral om methodes die zowel een command als een query zijn (als een methode noch een command noch een query is doet hij niets en kun je hem gewoon deleten). [Martin Fowler geeft het voorbeeld van de Stack.Pop()-methode](https://martinfowler.com/bliki/CommandQuerySeparation.html): die geeft een waarde terug, maar verkleint ook de stack. Desalniettemin is het een redelijk makkelijk te gebruiken methode. Mijn eigen interpretatie is dat je hier eigenlijk werkt met een query, die weliswaar de wereld niet 'constant' houdt, maar wel 'invariant', omdat je het kunt beschouwen als het volgende:
+
+```
+Stack<int> unprocessedNumbers = new ();
+unprocessedNumbers.Push(10);
+unprocessedNumbers.Push(7);
+unprocessedNumbers.Push(5);
+
+int first = unprocessedNumbers.Pop();
+Console.WriteLine(first); // print 5, unprocessed numbers = 7, 10
+int second = unprocessedNumbers.Pop();
+Console.WriteLine(second); // print 7, unprocessed numbers = 10
+```
+
+Dus terwijl _formeel_ Pop() een command èn query is omdat hij een waarde teruggeeft en de 'staat van de wereld' verandert, zou je het kunnen beschouwen als een pure query die de staat van de wereld conceptueel niet verandert. De 'unprocessedNumbers' is namelijk een invariant, want de abstracte inhoud ervan (de ongelezen nummers) blijft hetzelfde. 
+
+In de praktijk zul je -vaak door oude tradities in andere programmeertalen- wel vaker 'querycommands' zien, zoals een T Create(T t) methode die een object savet in een database en het object ook teruggeeft. Soms is dat inderdaad praktisch (als je bijvoorbeeld het Id wilt hebben dat de database teruggeeft) en het is niet iets dat je als programmeur met wortel en tak moet willen uitroeien - veel mensen hechten aan tradities, zelfs als die nutteloos of zelfs licht schadelijk zijn. Maar de code die je zelf schrijft-tenzij een architect of docent het expliciet specificeert- kun je 'querycommands' normaal beter zoveel mogelijk vermijden: maak dingen òf een query, òf een command. Je collega's (en jij over een half jaar als je dingen moet debuggen) zullen je dankbaar zijn!
 
 <div style="page-break-after: always;"></div>
 
