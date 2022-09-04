@@ -1599,6 +1599,47 @@ Voor properties heb je drie alternatieven:
 -public string Name { get; set; }
 Person(string name) { Name = name; } // dus een constructor. Wat je liever niet gebruikt voor dataklassen, maar soms is het de beste optie.
 
+## Create: wat voor returnwaarde?
+
+Create-methoden hebben doorgaans één van vier mogelijke returnwaarden:
+
+1. `T Create(T t)`
+
+- voordeel:
+ - dit is traditie, kan gewoon de afspraak zijn in je team.
+- nadelen:
+ - vaak gebruik je het object helemaal niet (nogal zinloos)
+ - als het misgaat zie je het niet tenzij je de returnwaarde checkt (wat je vaak vergeet)
+ - niet erg duidelijk qua communicatie: returntype dat niet void is suggereert een query, terwijl dit een command is. Nu is "Create" natuurlijk wel een suggestieve naam, maar command-query separation negeren is meestal een niet bijster goed idee.
+    
+2. `int Create(T t)`. // geeft het Id terug van het gemaakte object. Kan overigens ook een `long` of `Guid` of andere identifier zijn, in plaats van `int`.
+
+- voordeel: in sommige kringen traditie (zoals Java/Spring)
+- nadelen: basaal hetzelfde als van T
+  
+3. `bool Create(T t)`
+
+- voordeel:
+ - relatief elegant en simpel
+ - als je het checkt is het beter performant en heeft minder code nodig dan void/try-catch
+ - nadelen: zelfde als voor T en int
+   
+4. `void Create(T t)`
+
+- voordeel:
+ - beste qua 'fool-proof' (of voor verstrooide programmeurs als ikzelf): zelfs als je als programmeur vergeet returnwaardes te checken wordt dat automatisch gecorrigeerd
+ - duidelijke communicatie dat dit een command is
+ - volgt de vuistregel dat command/query separation meestal goed is
+ - automatisch uniforme codestijl, bij returnwaarden kunnen mensen vergeten de waarde op te vragen, wat voor gemengde code van bijvoorbeeld `Phone phone = _phoneService.Create(originalPhone)` en `_phoneService.Create(otherPhone)` leidt. Met een void returnwaarde heb je maar één uniforme stijl in de code, die iets makkelijker te leren, begrijpen en consistent toe te passen is.
+- nadelen:
+ - is meer code (try-catch nodig)
+ - als create heel vaak misgaat kan dit eventueel zorgen voor nodeloos lage performance; dan beter bijvoorbeeld een bool of int teruggeven en (met voldoende unit- en andere testen) checken dat het echt robuust is en gecheckt wordt. Al is zal performance-verlies door exceptions in de meeste projecten niet belangrijk genoeg zijn om excepties te weren.
+       
+Dat is veel keuze, en het lijkt op het eerste gezicht een moeilijke keuze. Zelf zie ik het echter als een "3-euro keus" waar je normaal weinig tijd wilt besteden aan debatten of piekeren over wat de 'beste' manier is.
+
+De verschillen tussen de types returnwaarden qua programmeertijd en onderhoudbaarheid zijn niet groot; normaal volg je de codestandaarden van je team, en alleen als je meerdere problemen ziet met de aanpak (en die voorkomen kunnen worden met een andere aanpak) dan switch je. Voor privé-projecten gebruik je uiteraard de stijl die jouw voorkeur heeft - ikzelf geef meestal de voorkeur aan de void, zoals je mogelijk al geraden hebt.
+
+
 # Gebruiksvriendelijkheid
 
 <div style="page-break-after: always;"></div>
