@@ -926,6 +926,8 @@ Samenvattend: gebruik constructoren voor services die private fields hebben; maa
 
 ## Wanneer (en waarom) properties?
 
+_"If you're still creating public fields in your types, stop now."_ - Bill Wagner, "More Effective C#"
+
 Lang geleden moesten programmeurs werken met simpele variabelen:
 
 ```
@@ -957,7 +959,7 @@ p.dateOfBirth ="12121916";
 showPerson(p);
 ```
 
-Dat was uiteraard veel handiger, ook voor functieaanroepen. Echter bleken structs ook problemen te hebben: er was geen 'kwaliteitscontrole' op, elk deel van een programma kon de inhoud van de struct aanpassen met willekeurige waarden. Zo maakte ik mee dat er soms een foute waarde zat in een struct, en elk van de 100,000 andere regels in het programma kon die fout veroorzaakt hadden! De 'openheid' van structs zorgde voor veel en moeilijk op te sporen bugs. Daarom besloten latere ontwerpers van programmeertalen, zoals die van Java in de jaren '90, dat velden van structs normaal alleen te wijzigen waren door code in de struct zelf. De velden werden dus 'private'.
+Dat was uiteraard veel handiger, ook voor functieaanroepen. Echter bleken structs ook problemen te hebben: er was geen 'kwaliteitscontrole' op, elk deel van een programma kon de inhoud van de struct aanpassen met willekeurige waarden. Zo maakte ik bij een groot commercieel project mee dat er soms een foute waarde zat in een struct, en elk van de 100,000 andere regels in de broncode kon die fout veroorzaakt hebben! De 'openheid' van structs zorgde voor veel en moeilijk op te sporen bugs. Daarom besloten latere ontwerpers van programmeertalen, zoals die van Java in de jaren '90, dat velden van structs normaal alleen te wijzigen waren door code in de struct zelf. De velden werden dus 'private'.
 
 C-code als 
 ```
@@ -1054,7 +1056,7 @@ class Person
 
 Hieraan is hopelijk nog te zien dat properties geen 'velden' of 'state' zijn, maar vermomde methoden! _Daarom mag je ook properties hebben in interfaces, terwijl velden in interfaces niet mogen_.
 
-Hoe dan ook: zo had je geen constructor meer nodig (je kon zeggen p.FirstName = "Hans"; - door de compiler omgezet in p.FirstName("Hans"), maar nog steeds was het behoorlijk wat leeswerk; en mensen gebruikten altijd het patroon "type _varName; public type { get { return _varName; } set { _varName = value; }}". Daarom introduceerde C#3.0 (in 2007) zogenaamde "auto-properties", waar die zich herhalende code werd geëlimineerd:
+Hoe dan ook: zo had je geen constructor meer nodig (je kon zeggen p.FirstName = "Hans"; - door de compiler omgezet in p.set_FirstName("Hans"), maar nog steeds was het behoorlijk wat leeswerk; en mensen gebruikten bijna altijd het patroon "type _varName; public type { get { return _varName; } set { _varName = value; }}". Daarom introduceerde C#3.0 (in 2007) zogenaamde "auto-properties", waar die zich herhalende code werd geëlimineerd:
 
 ```
 class Person 
@@ -1071,9 +1073,20 @@ Zoals je ziet, veel minder code!
 
 Let wel, als je zou willen controleren of de waarde van een property wel klopt (dat bijvoorbeeld de DateOfBirth niet in de toekomst ligt) dan moet je weer een _dateOfBirth-veld introduceren en de volledige get;/set; syntax. Mogelijk is dat één van de redenen waarom C# programmeurs vaak liever die moeite niet doen en validatielogica vaak in de services zetten in plaats van in de dataklasse. 
 
-En _wanneer_ properties? Normaal gebruik je properties als een veld/data public moet zijn, dus in data-klassen als Phone. Als data private moet zijn (vaak readonly private, gezet in de constructor en absoluut niet iets dat andere objecten moeten zien, laat staan aan moeten zitten) maak je er een veld van, dus private readonly type _myField.
+En _wanneer_ properties? Normaal gebruik je properties als een veld/data public moet zijn, dus in data-klassen als Phone. Als data private moet zijn (vaak readonly private, waarvan de waarde wordt toegekend in de constructor en absoluut niet iets dat andere objecten moeten zien, laat staan aan moeten zitten) maak je er een veld van, dus private readonly type _myField.
+
+En ja, properties zijn ook veel beter in het geval je een soort kwaliteitscontrole wilt invoeren op je velden: beter een property veranderen dan 100 x in je code zeggen "if (string.IsNullOrEmpty(name)) throw new ArgumentException("Name is too short"); else person.Name = name;" Daarnaast kan je properties ook makkelijker veilig maken bij multithreading. Met properties kan je geen bugs krijgen door ze door te geven als 'ref' of 'out' parameters - in tegenstelling tot bij fields, waar dat wel kan. En properties geven meer controle over de toegankelijkheid van een waarde: je kunt een getter bijvoorbeeld public maken, maar de setter private. Tenslotte:mocht je denken dat je een public field later altijd wel in een property kan overzetten, vergeet dan niet dat alle code die dat veld gebruikt dan gehercompileerd moet worden, anders breekt het. En dat is uren werk voor een boel mensen, die je dat niet in dank zullen afnemen. Ellende die je jezelf bespaart door iets meteen een property te maken.
+
+En... properties zijn de toekomst. Talen ontworpen ná 2010, zoals Kotlin en Swift, hebben geeneens velden meer: wat een veld lijkt (var x: Int) is eigenlijk een property, die je optioneel kan manipuleren met getters en setters. Net zoals programmeurs anno 2022 afwillen van switch-statements en for-loops en andere bagage die nodig leek in de jaren '70, is het (publieke) 'veld' ook iets dat langzamerhand onmogelijk wordt gemaakt; veel onderhoudbaarder, en compilers zijn tegenwoordig zo slim dat properties in de broncode worden 'weggecompileerd' en geen performance-verlies meer geven.
+
+En zelfs als dàt je niet overtuigt moet je er nog steeds rekening mee houden dat je code vaak moet werken met de bibliotheken van Microsoft. En die zijn er op gebaseerd op properties. Dus WPF, Windows Forms, en Web Forms kunnen alleen gebruik maken van properties, niet van public fields. Dus vaak moet je sowieso properties gebruiken, anders werkt je programma niet!
 
 Let wel: heel soms gebruiken mensen private properties en public fields; maar zeker public fields zijn een slecht idee, want _als_ je moet gaan debuggen omdat ergens in de andere 100,000 regels code de waarde van dat veld onterecht wordt veranderd, moet je hele code hercompileren, en als je de pech hebt dat je code ook door andere applicaties gebruikt wordt, worden die mensen boos op je omdat hun code kapot gaat. Als je data public maakt, zet hem dan alsjeblieft in een property, voor het geval dat. Die 13 karakters extra leeswerk en paar karakters extra typewerk (prop TAB TAB is handig) zijn peanuts vergeleken met de problemen die je krijgt met anderen als je een public field later alsnog moet omzetten naar een property.
+
+**Meer lezen**: 
+
+- _"More Effective C#"_ -Bill Wagner
+
 
 <div style="page-break-after: always;"></div>
 
