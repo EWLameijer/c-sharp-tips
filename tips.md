@@ -766,6 +766,99 @@ Hou communicatietesten dus sowieso in je toolkit (soms zijn ze handig), maar lee
 
 <div style="page-break-after: always;"></div>
 
+## Test logica, geen data 
+
+Hoe weet je of je code goed is? Normaal check je het de eerste keer door het met de hand te testen. Maar als er veel code is wil je dat niet elke keer doen, en gebruik je unit-tests.
+
+Het lastige van unit-tests is dat je doorgaans wil weten of de _logica_ van een methode goed is- maar datgene wat je in de praktijk kan testen is alleen maar de data die in en uit een methode gaat! En dat kan vervelend zijn, want zelfs als de logica in de methode hetzelfde blijft, kan de data veranderen: wat als Aardvark een telefoon uitbrengt? Dan is phones.Get(0) ineens geen Apple meer!
+
+Laten we kijken naar de scenarios voor het testen van methoden. Laten we concreet kijken naar een unit test voor GetAllPhones().
+
+```
+// in PhoneService.cs
+public class PhoneService : IPhoneService
+{
+    private readonly List<Phone> _phones = new()
+    {
+        new Phone { Id = 1, Brand = "Apple", Type = "IPhone 11" },
+        new Phone { Id = 2, Brand = "Huawei", Type = "SpyPhone 1984" },
+    };
+
+    public IEnumerable<Phone> Get() => _phones;
+}
+
+// in PhoneServiceTests/Get.cs
+public class Get : Base
+{
+    [Fact]
+    private void Should_return_all_phones()
+    {
+        IEnumerable<Phone> phones = PhoneService.Get();
+
+        Assert.Equal(2, phones.Count());
+    }
+}
+```
+
+In dit geval slaagt de unit test. Maar wat als je een extra telefoon wilt toevoegen? Bijvoorbeeld een tweede Apple? Dan gaat de test kapot. En dat is onterecht, wat de testmethode is niet veranderd of minder correct geworden. Dat de test 'breekt' en veranderd moet worden kost alleen maar tijd, zonder waarde op te leveren voor jou als programmeur of voor jouw team of voor jouw werkgever/opdrachtgever. Kan dat niet beter?
+
+In dit geval zou je kunnen overwegen de data die je door wil geven in de unittest zelf te zetten, en de 'normale' data van PhoneService daarmee te vervangen. Het handigste daarvoor is constructor-injectie.
+
+```
+// in PhoneService.cs
+public PhoneService(List<Phone>? phones = null)
+{
+    if (phones != null) _phones = phones;
+}
+```
+
+Ik maak hier gebruik van een default parameter: als iemand 'gewoon' `IPhoneService phoneService = new PhoneService();` gebruikt krijg je precies het oude gedrag.
+
+Maar je kan nu dus een lijst telefoons via de constructor 'injecteren', voor testdoeleinden:
+
+```
+// in Base.cs
+protected static readonly List<Phone> TestPhones = new()
+{
+    new Phone { Id = 1, Brand = "Apple", Type = "iPhone 12" },
+    new Phone { Id = 2, Brand = "Google", Type = "Pixel 7" },
+    new Phone { Id = 3, Brand = "Apple", Type = "iPhone 13" },
+};
+
+protected PhoneService PhoneService = new(TestPhones);
+
+// in Get.cs
+public void Should_return_all_phones()
+{
+    // act
+    IEnumerable<Phone> phones = PhoneService.Get();
+
+    // assert
+    Assert.Equal(3, phones.Count());
+}
+```
+
+De tests werken nu weer. Mocht ik in de PhoneService iets veranderen, bijvoorbeeld 
+
+```
+private readonly List<Phone> _phones = new()
+{
+    new Phone { Id = 3, Brand = "Apple", Type = "IPhone 11" },
+    new Phone { Id = 1, Brand = "Huawei", Type = "SpyPhone 1984" },
+    new Phone { Id = 4, Brand = "Google", Type = "Pixel 8" },
+    new Phone { Id = 2, Brand = "Samsung", Type = "Galaxy A53" },
+};
+```
+
+dan werken alle unittests nog steeds.
+
+Echter, bij het introduceren van een fout in de logica van de methode
+```
+public IEnumerable<Phone> Get() => _phones.Take(2);
+```
+
+dan zien de unittests dat onmiddellijk - wat ook is wat je wilt!
+
 # Debuggen
 
 <div style="page-break-after: always;"></div>
