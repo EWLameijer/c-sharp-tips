@@ -1,1 +1,8 @@
 /*.backup
+/Demos/BasicPhoneshop/.vs/*
+/Demos/BasicPhoneshop/EFCoreIntegrationTestsSmithRealDb/bin/*
+/Demos/BasicPhoneshop/EFCoreIntegrationTestsSmithRealDb/obj/*
+/Demos/BasicPhoneshop/EFCoreIntTestSmith.Business.IntegrationTests/bin/*
+/Demos/BasicPhoneshop/EFCoreIntTestSmith.Business.IntegrationTests/obj/*
+/Demos/BasicPhoneshop/EFCoreIntTestSmith.Business/bin/*
+/Demos/BasicPhoneshop/EFCoreIntTestSmith.Business/obj/*
